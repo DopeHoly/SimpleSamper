@@ -9,11 +9,13 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "MySamplerVoice.h"
 
 //==============================================================================
 /**
 */
-class SimpleSamperAudioProcessor  : public juce::AudioProcessor
+class SimpleSamperAudioProcessor : public juce::AudioProcessor,
+    public ValueTree::Listener
 {
 public:
     //==============================================================================
@@ -56,14 +58,35 @@ public:
     void loadFile(const String& path);
     void loadFileFromOpenFileDialog();
 
-    int  getNumSamplerSounds() { return mSampler.getNumSounds(); };
+    int  getNumSamplerSounds() { return mSampler.getNumSounds(); }
+    AudioFormatManager& getFormatManager() { return mFormatManager; }
+    AudioBuffer<float>& getWaveForm() { return mWaveForm; }
 
-    AudioFormatManager mFormatManager;
+    void updateADSR();
+
+    ADSR::Parameters& getADSRParams() { return mADSRparameters; }
+    AudioProcessorValueTreeState& getAPVTS() { return mAPVTS; }
+    ActionBroadcaster& getBroadcasterFileLoaded() { return FileLoaded; }
+    Synthesiser& getSampler() { return mSampler; }
+
 private:
+    ActionBroadcaster FileLoaded;
     Synthesiser mSampler;
+    //ADSR mADSR;
     const int mNumVoices{ 3 };
 
+    AudioBuffer<float> mWaveForm;
+
+    ADSR::Parameters mADSRparameters;
+
+    AudioFormatManager mFormatManager;
     AudioFormatReader* mFormatReader{ nullptr };
+
+    AudioProcessorValueTreeState mAPVTS;
+    AudioProcessorValueTreeState::ParameterLayout createParameters();
+    void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
+
+    std::atomic<bool> mShouldUpdate{ true };
 
     void recreateSamplerVoices(int numVoices = 0);
     //==============================================================================

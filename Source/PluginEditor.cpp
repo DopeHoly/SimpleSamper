@@ -11,47 +11,57 @@
 
 //==============================================================================
 SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamperAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p),
+    audioProcessor (p), 
+    mWaveThumbnail(p), 
+    mADSRComponent(p), 
+    mFileLoaderListener(nullptr)//,
+    //mDragAndDropComponent(p)
 {
-    mLoadButton.onClick = [&]() { audioProcessor.loadFileFromOpenFileDialog(); };
-    addAndMakeVisible(mLoadButton);
+    addAndMakeVisible(mWaveThumbnail);
+    addAndMakeVisible(mADSRComponent);
 
-    mLabel.setFont(15.0f);
-    mLabel.setEditable(false);
-    mLabel.setColour(Label::ColourIds::textColourId, Colours::white);
-    addAndMakeVisible(mLabel);
+    //mDragAndDropComponent.setVisible(false);
+    //addAndMakeVisible(mDragAndDropComponent);
 
-    setSize (400, 300);
+    mFileLoaderListener.setFunction(std::bind(&SimpleSamperAudioProcessorEditor::FileLoaded, this));
+    audioProcessor.getBroadcasterFileLoaded().addActionListener(&mFileLoaderListener);
+
+    startTimerHz(30);
+
+    setSize (700, 300);
 }
 
 SimpleSamperAudioProcessorEditor::~SimpleSamperAudioProcessorEditor()
 {
+    stopTimer();
 }
 
 //==============================================================================
 void SimpleSamperAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll(Colours::black);
-
-    if (audioProcessor.getNumSamplerSounds() > 0) {
-        g.fillAll(Colours::green);
-        mLabel.setText("Audio loaded", NotificationType::dontSendNotification);
-    }
-    else {
-        mLabel.setText("Load a Sound", NotificationType::dontSendNotification);
-        g.fillAll(Colours::black);
-    }
+    //paintZone(g);
+    //g.fillAll(Colours::black);
+    g.fillAll(mCurrentColour);
 }
 
 void SimpleSamperAudioProcessorEditor::resized()
 {
-    //mLoadButton.setBounds(getWidth() / 2 - 50, getHeight() / 2 - 50, 100, 100);
-    mLabel.setBounds(getWidth() / 2 - 50, getHeight() / 2 - 50, 100, 100);
+    //mDragAndDropComponent.setBounds(0.0f, 0.0f, getWidth(), getHeight());
+    mWaveThumbnail.setBoundsRelative(0, 0.25f, 1, 0.5f);
+    mADSRComponent.setBoundsRelative(0.6f, 0.6f, 0.4f, 0.4f);
 }
 
-bool SimpleSamperAudioProcessorEditor::isInterestedInFileDrag(const StringArray& files) 
+
+void SimpleSamperAudioProcessorEditor::FileLoaded() {
+    mWaveThumbnail.setShouldBePainting(true);
+    repaint();
+}
+
+
+bool SimpleSamperAudioProcessorEditor::isInterestedInFileDrag(const StringArray& files)
 {
-    WildcardFileFilter filter(audioProcessor.mFormatManager.getWildcardForAllFormats(), {}, {});
+    WildcardFileFilter filter(audioProcessor.getFormatManager().getWildcardForAllFormats(), {}, {});
 
     for (String file : files) {
         if (!filter.isFileSuitable(file))
@@ -60,12 +70,53 @@ bool SimpleSamperAudioProcessorEditor::isInterestedInFileDrag(const StringArray&
     return true;
 }
 
-void SimpleSamperAudioProcessorEditor::filesDropped(const StringArray& files, int x, int y) 
+void SimpleSamperAudioProcessorEditor::filesDropped(const StringArray& files, int x, int y)
 {
     for (auto file : files) {
-        if(isInterestedInFileDrag(file)) {
+        if (isInterestedInFileDrag(file)) {
             audioProcessor.loadFile(file);
         }
     }
+    mCurrentColour = DefaultDragDropColour;
     repaint();
 }
+
+void SimpleSamperAudioProcessorEditor::fileDragEnter(const StringArray& files, int x, int y)
+{
+    if (isInterestedInFileDrag(files))
+        mCurrentColour = trueDragDropColour;
+    else
+        mCurrentColour = falseDragDropColour;
+    repaint();
+}
+
+void SimpleSamperAudioProcessorEditor::fileDragExit(const StringArray& files)
+{
+    mCurrentColour = DefaultDragDropColour;
+    repaint();
+}
+
+void SimpleSamperAudioProcessorEditor::timerCallback() 
+{
+    repaint();
+}
+
+
+//
+//void SimpleSamperAudioProcessorEditor::sliderValueChanged(Slider* slider) 
+//{
+//    ADSR::Parameters& adsr = audioProcessor.getADSRParams();
+//    if (slider == &mAttackSlider) {
+//        adsr.attack = mAttackSlider.getValue();
+//    }
+//    if (slider == &mDecaySlider) {
+//        adsr.decay = mDecaySlider.getValue();
+//    }
+//    if (slider == &mSustainSlider) {
+//        adsr.sustain = mSustainSlider.getValue();
+//    }
+//    if (slider == &mReleaseSlider) {
+//        adsr.release = mReleaseSlider.getValue();
+//    }
+//    audioProcessor.updateADSR();
+//}

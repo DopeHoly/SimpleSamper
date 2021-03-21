@@ -19,9 +19,10 @@ SimpleSamperAudioProcessor::SimpleSamperAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ), mAPVTS(*this, nullptr, "PARAMETERS", createParameters())
 #endif
 {
+    mAPVTS.state.addListener(this);
     mFormatManager.registerBasicFormats();
     recreateSamplerVoices();
 }
@@ -97,6 +98,8 @@ void SimpleSamperAudioProcessor::changeProgramName (int index, const juce::Strin
 void SimpleSamperAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     mSampler.setCurrentPlaybackSampleRate(sampleRate);
+
+    updateADSR();
 }
 
 void SimpleSamperAudioProcessor::releaseResources()
@@ -140,6 +143,8 @@ void SimpleSamperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    updateADSR();
+    //mSampler.getVoice(0).
     mSampler.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
 }
 
@@ -181,9 +186,9 @@ void SimpleSamperAudioProcessor::recreateSamplerVoices(int numVoices)
     if (numVoices == 0) {
         numVoices = mNumVoices;
     }
-    //создание голосов сэмплера
+
     for (int i = 0; i < numVoices; ++i) {
-        mSampler.addVoice(new SamplerVoice());
+        mSampler.addVoice(new MySamplerVoice());
     }
 }
 
@@ -204,10 +209,54 @@ void SimpleSamperAudioProcessor::loadFile(const String& path)
     mSampler.clearSounds();
 
     auto file = File(path);
+    
     mFormatReader = mFormatManager.createReaderFor(file);
-    BigInteger range;
-    range.setRange(0, 128, true);//?
 
-    mSampler.addSound(new SamplerSound("Sample", *mFormatReader, range, 60, 0.1, 0.1, 10.0));
+    auto sampleLength = static_cast<int>(mFormatReader->lengthInSamples);
+
+    mWaveForm.setSize(1, sampleLength);
+    mFormatReader->read(&mWaveForm, 0, sampleLength, 0, true, false);
+
+    BigInteger range;
+    range.setRange(0, 128, true);
+
+    mSampler.addSound(new MySamplerSound("Sample", *mFormatReader, range, 60, 0.1, 0.1, 10.0));
+
+    FileLoaded.sendActionMessage("");
+}
+
+void SimpleSamperAudioProcessor::updateADSR() 
+{
+    if (!mShouldUpdate) return;
+    mADSRparameters.attack = mAPVTS.getRawParameterValue("ATTACK")->load();
+    mADSRparameters.decay = mAPVTS.getRawParameterValue("DECAY")->load();
+    mADSRparameters.sustain = mAPVTS.getRawParameterValue("SUSTAIN")->load();
+    mADSRparameters.release = mAPVTS.getRawParameterValue("RELEASE")->load();
+
+    for (int i = 0; i < mSampler.getNumSounds(); ++i)
+    {
+        if (auto sound = dynamic_cast<MySamplerSound*>(mSampler.getSound(i).get()))
+        {
+            sound->setEnvelopeParameters(mADSRparameters);
+        }
+    }
+    mShouldUpdate = false;
+}
+
+AudioProcessorValueTreeState::ParameterLayout SimpleSamperAudioProcessor::createParameters() 
+{
+    std::vector<std::unique_ptr<RangedAudioParameter>> parameters;
+
+    parameters.push_back(std::make_unique<AudioParameterFloat>("ATTACK", "Attack", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<AudioParameterFloat>("DECAY", "Decay", 0.0f, 3.0f, 2.0f));
+    parameters.push_back(std::make_unique<AudioParameterFloat>("SUSTAIN", "Sustain", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<AudioParameterFloat>("RELEASE", "Release", 0.0f, 5.0f, 0.0f));
+    return { parameters.begin(), parameters.end() };
+}
+
+void SimpleSamperAudioProcessor::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
+{
+    mShouldUpdate = true;
+    updateADSR();
 }
 
