@@ -6,6 +6,10 @@
               pluginManufacturer="CPCom">
   <MAINGROUP id="mUDhJl" name="SimpleSamper">
     <GROUP id="{363B4C9C-B077-C19E-8B56-C57D98A5AB9F}" name="Source">
+      <FILE id="pd38xJ" name="SpectrumAnalyzer.cpp" compile="1" resource="0"
+            file="Source/SpectrumAnalyzer.cpp"/>
+      <FILE id="xkLUCW" name="SpectrumAnalyzer.h" compile="0" resource="0"
+            file="Source/SpectrumAnalyzer.h"/>
       <FILE id="HzRM94" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="sZn2kO" name="PluginProcessor.h" compile="0" resource="0"
@@ -23,6 +27,8 @@
             file="Source/DragAndDropComponent.cpp"/>
       <FILE id="edyPWa" name="DragAndDropComponent.h" compile="0" resource="0"
             file="Source/DragAndDropComponent.h"/>
+      <FILE id="kgDDAl" name="SimplePlot.cpp" compile="1" resource="0" file="Source/SimplePlot.cpp"/>
+      <FILE id="pwNzjF" name="SimplePlot.h" compile="0" resource="0" file="Source/SimplePlot.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

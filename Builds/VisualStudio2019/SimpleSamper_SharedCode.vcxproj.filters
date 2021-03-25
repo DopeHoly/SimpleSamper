@@ -466,11 +466,11 @@
     <Filter Include="JUCE Library Code">
       <UniqueIdentifier>{7ED5A90E-41AF-A1EF-659B-37CEEAB9BA61}</UniqueIdentifier>
     </Filter>
-    <Filter Include="SimpleSamper\Source\Helpers">
-      <UniqueIdentifier>{f6d65293-d57b-4e18-885b-6326f5e8972c}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\SpectrumAnalyzer.cpp">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp">
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
@@ -481,6 +481,9 @@
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\ADSRComponent.cpp">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\SimplePlot.cpp">
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_audio_basics\buffers\juce_AudioChannelSet.cpp">
@@ -2556,14 +2559,20 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_opengl.cpp">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\ActiveActionListener.cpp">
-      <Filter>SimpleSamper\Source\Helpers</Filter>
+    <ClCompile Include="..\..\Source\SpectrumAnalyzerComponent.cpp">
+      <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\MySamplerVoice.cpp">
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\ActiveActionListener.cpp">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\SpectrumAnalyzer.h">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\PluginProcessor.h">
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
@@ -2574,6 +2583,9 @@
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\ADSRComponent.h">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\SimplePlot.h">
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
@@ -5039,10 +5051,13 @@
     <ClInclude Include="..\..\JuceLibraryCode\JucePluginDefines.h">
       <Filter>JUCE Library Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\ActiveActionListener.h">
-      <Filter>SimpleSamper\Source\Helpers</Filter>
+    <ClInclude Include="..\..\Source\SpectrumAnalyzerComponent.h">
+      <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\MySamplerVoice.h">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\ActiveActionListener.h">
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
   </ItemGroup>

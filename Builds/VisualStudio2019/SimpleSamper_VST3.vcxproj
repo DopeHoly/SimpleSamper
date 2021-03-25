@@ -92,7 +92,7 @@
       <AdditionalDependencies>SimpleSamper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\VST3\" "D:\Produce\VSTs\MyPlugins"</Command>
+      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\VST3\*" "D:\Produce\VSTs\MyPlugins"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,7 +142,7 @@
       <AdditionalDependencies>SimpleSamper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\VST3\" "D:\Produce\VSTs\MyPlugins"</Command>
+      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\VST3\*" "D:\Produce\VSTs\MyPlugins"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -67,7 +67,7 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -107,7 +107,7 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -132,10 +132,13 @@
   <ItemGroup>
     <ClCompile Include="..\..\Source\ActiveActionListener.cpp" />
     <ClCompile Include="..\..\Source\MySamplerVoice.cpp" />
+    <ClCompile Include="..\..\Source\SpectrumAnalyzer.cpp" />
     <ClCompile Include="..\..\Source\PluginProcessor.cpp" />
     <ClCompile Include="..\..\Source\PluginEditor.cpp" />
+    <ClCompile Include="..\..\Source\SpectrumAnalyzerComponent.cpp" />
     <ClCompile Include="..\..\Source\WaveThumbnail.cpp" />
     <ClCompile Include="..\..\Source\ADSRComponent.cpp" />
+    <ClCompile Include="..\..\Source\SimplePlot.cpp" />
     <ClCompile Include="C:\JUCE\modules\juce_audio_basics\buffers\juce_AudioChannelSet.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -2185,10 +2188,13 @@
   <ItemGroup>
     <ClInclude Include="..\..\Source\ActiveActionListener.h" />
     <ClInclude Include="..\..\Source\MySamplerVoice.h" />
+    <ClInclude Include="..\..\Source\SpectrumAnalyzer.h" />
     <ClInclude Include="..\..\Source\PluginProcessor.h" />
     <ClInclude Include="..\..\Source\PluginEditor.h" />
+    <ClInclude Include="..\..\Source\SpectrumAnalyzerComponent.h" />
     <ClInclude Include="..\..\Source\WaveThumbnail.h" />
     <ClInclude Include="..\..\Source\ADSRComponent.h" />
+    <ClInclude Include="..\..\Source\SimplePlot.h" />
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h" />
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h" />
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h" />

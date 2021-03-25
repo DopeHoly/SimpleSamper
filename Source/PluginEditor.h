@@ -13,7 +13,7 @@
 #include "WaveThumbnail.h"
 #include "ADSRComponent.h"
 #include "ActiveActionListener.h"
-#include "DragAndDropComponent.h"
+#include "SpectrumAnalyzerComponent.h"
 
 //==============================================================================
 /**
@@ -41,14 +41,13 @@ public:
     void timerCallback() override;
 
 private:
+    SimpleSamperAudioProcessor& audioProcessor;
 
     ActiveActionListener mFileLoaderListener;
 
     WaveThumbnail mWaveThumbnail;
     ADSRComponent mADSRComponent;
-
-    SimpleSamperAudioProcessor& audioProcessor;
-
+    SpectrumAnalyzerComponent mSAComponent;
 
     Colour DefaultDragDropColour{ Colours::transparentBlack };
     Colour trueDragDropColour{ Colours::lime};

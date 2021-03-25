@@ -20,6 +20,7 @@ SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamper
 {
     addAndMakeVisible(mWaveThumbnail);
     addAndMakeVisible(mADSRComponent);
+    addAndMakeVisible(mSAComponent);
 
     //mDragAndDropComponent.setVisible(false);
     //addAndMakeVisible(mDragAndDropComponent);
@@ -29,7 +30,7 @@ SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamper
 
     startTimerHz(30);
 
-    setSize (700, 300);
+    setSize (700, 600);
 }
 
 SimpleSamperAudioProcessorEditor::~SimpleSamperAudioProcessorEditor()
@@ -48,13 +49,15 @@ void SimpleSamperAudioProcessorEditor::paint (juce::Graphics& g)
 void SimpleSamperAudioProcessorEditor::resized()
 {
     //mDragAndDropComponent.setBounds(0.0f, 0.0f, getWidth(), getHeight());
-    mWaveThumbnail.setBoundsRelative(0, 0.25f, 1, 0.5f);
-    mADSRComponent.setBoundsRelative(0.6f, 0.6f, 0.4f, 0.4f);
+    mWaveThumbnail.setBoundsRelative(0, 0, 1, 0.5f);
+    mADSRComponent.setBoundsRelative(0.6f, 0.3f, 0.4f, 0.4f);
+    mSAComponent.setBoundsRelative(0, 0.5f, 1, 0.5f);
 }
 
 
 void SimpleSamperAudioProcessorEditor::FileLoaded() {
     mWaveThumbnail.setShouldBePainting(true);
+    mSAComponent.SetSample(audioProcessor.getWaveForm());
     repaint();
 }
 
