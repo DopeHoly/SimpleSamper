@@ -44,6 +44,8 @@ private:
     SimplePlot mPlot;
     SpectrumAnalyzer mSpectrumAnalyzer;
 
+    //ntlab::Plot2D mPlot;
+    std::unique_ptr<std::vector<OSC_Setting>> mMap;
     std::unique_ptr<AudioSampleBuffer> mSample;
     int sliderPosition{ 0 };
 

@@ -17,18 +17,43 @@
       <FILE id="VRWkjm" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="VsYI5W" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="yvvteQ" name="PeakFinder.cpp" compile="1" resource="0" file="Source/PeakFinder.cpp"/>
+      <FILE id="XtCDk1" name="PeakFinder.h" compile="0" resource="0" file="Source/PeakFinder.h"/>
       <FILE id="vSkNij" name="WaveThumbnail.cpp" compile="1" resource="0"
             file="Source/WaveThumbnail.cpp"/>
       <FILE id="MVYmHy" name="WaveThumbnail.h" compile="0" resource="0" file="Source/WaveThumbnail.h"/>
       <FILE id="qIwmoY" name="ADSRComponent.cpp" compile="1" resource="0"
             file="Source/ADSRComponent.cpp"/>
       <FILE id="rFWcIW" name="ADSRComponent.h" compile="0" resource="0" file="Source/ADSRComponent.h"/>
-      <FILE id="ZXbGLf" name="DragAndDropComponent.cpp" compile="1" resource="0"
-            file="Source/DragAndDropComponent.cpp"/>
-      <FILE id="edyPWa" name="DragAndDropComponent.h" compile="0" resource="0"
-            file="Source/DragAndDropComponent.h"/>
       <FILE id="kgDDAl" name="SimplePlot.cpp" compile="1" resource="0" file="Source/SimplePlot.cpp"/>
       <FILE id="pwNzjF" name="SimplePlot.h" compile="0" resource="0" file="Source/SimplePlot.h"/>
+      <FILE id="QbIcCB" name="ActiveActionListener.cpp" compile="1" resource="0"
+            file="Source/ActiveActionListener.cpp"/>
+      <FILE id="VHJpLq" name="ActiveActionListener.h" compile="0" resource="0"
+            file="Source/ActiveActionListener.h"/>
+      <FILE id="rnmrjn" name="MySamplerVoice.cpp" compile="1" resource="0"
+            file="Source/MySamplerVoice.cpp"/>
+      <FILE id="sNusqa" name="MySamplerVoice.h" compile="0" resource="0"
+            file="Source/MySamplerVoice.h"/>
+      <FILE id="EH1zW3" name="SimpleWaveGenerator.cpp" compile="1" resource="0"
+            file="Source/SimpleWaveGenerator.cpp"/>
+      <FILE id="ADpzP2" name="SimpleWaveGenerator.h" compile="0" resource="0"
+            file="Source/SimpleWaveGenerator.h"/>
+      <FILE id="xii48D" name="SpectrumAnalyzerComponent.cpp" compile="1"
+            resource="0" file="Source/SpectrumAnalyzerComponent.cpp"/>
+      <FILE id="SYOF1b" name="SpectrumAnalyzerComponent.h" compile="0" resource="0"
+            file="Source/SpectrumAnalyzerComponent.h"/>
+      <FILE id="YpbZ64" name="SmartOscillator.cpp" compile="1" resource="0"
+            file="Source/SmartOscillator.cpp"/>
+      <FILE id="bKPUye" name="SmartOscillator.h" compile="0" resource="0"
+            file="Source/SmartOscillator.h"/>
+      <FILE id="GJekNM" name="SynthVoice.cpp" compile="1" resource="0" file="Source/SynthVoice.cpp"/>
+      <FILE id="vMIlUc" name="SynthVoice.h" compile="0" resource="0" file="Source/SynthVoice.h"/>
+      <FILE id="paz9g9" name="OSC_Setting.cpp" compile="1" resource="0" file="Source/OSC_Setting.cpp"/>
+      <FILE id="AbeQiy" name="OSC_Setting.h" compile="0" resource="0" file="Source/OSC_Setting.h"/>
+      <FILE id="aNzbO1" name="MyOscillator.cpp" compile="1" resource="0"
+            file="Source/MyOscillator.cpp"/>
+      <FILE id="SRxYAA" name="MyOscillator.h" compile="0" resource="0" file="Source/MyOscillator.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

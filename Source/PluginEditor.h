@@ -14,6 +14,7 @@
 #include "ADSRComponent.h"
 #include "ActiveActionListener.h"
 #include "SpectrumAnalyzerComponent.h"
+#include "SynthVoice.h"
 
 //==============================================================================
 /**
@@ -49,6 +50,7 @@ private:
     ADSRComponent mADSRComponent;
     SpectrumAnalyzerComponent mSAComponent;
 
+    //ntlab::WindowOpenGLContext mglContext;
     Colour DefaultDragDropColour{ Colours::transparentBlack };
     Colour trueDragDropColour{ Colours::lime};
     Colour falseDragDropColour{ Colours::red.withAlpha(0.5f) };

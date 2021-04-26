@@ -1,28 +1,32 @@
+/*
+  ==============================================================================
+
+    SynthVoice.h
+    Created: 11 Apr 2021 6:07:38pm
+    Author:  menin
+
+  ==============================================================================
+*/
+
 #pragma once
 
 #include <JuceHeader.h>
 #include <fftw3.h>
 
-class MySamplerSound : public SynthesiserSound
+class SynthSound : public SynthesiserSound
 {
 public:
-    MySamplerSound(const String& name,
-        AudioFormatReader& source,
+    SynthSound(
+        double rate,
         const BigInteger& midiNotes,
+        uint32 samplePerBlock,
+        uint32 numChanels,
         int midiNoteForNormalPitch,
         double attackTimeSecs,
-        double releaseTimeSecs,
-        double maxSampleLengthSeconds);
+        double releaseTimeSecs);
+
     /** Destructor. */
-    ~MySamplerSound() override;
-
-    /** Returns the sample's name */
-    const String& getName() const noexcept { return name; }
-
-    /** Returns the audio sample data.
-        This could return nullptr if there was a problem loading the data.
-    */
-    AudioBuffer<float>* getAudioData() const noexcept { return data.get(); }
+    ~SynthSound() override;
 
     //==============================================================================
     /** Changes the parameters of the ADSR envelope which will be applied to the sample. */
@@ -33,25 +37,23 @@ public:
     bool appliesToChannel(int midiChannel) override;
 
 private:
+    friend class SynthVoice;
     //==============================================================================
-    friend class MySamplerVoice;
 
-    String name;
-    std::unique_ptr<AudioBuffer<float>> data;
-    double sourceSampleRate;
+    double SampleRate;
     BigInteger midiNotes;
     int length = 0, midiRootNote = 0;
-
     ADSR::Parameters params;
 
-    JUCE_LEAK_DETECTOR(SamplerSound)
+
+    JUCE_LEAK_DETECTOR(SynthSound)
 };
 
-class MySamplerVoice : public SynthesiserVoice
+class SynthVoice : public SynthesiserVoice
 {
 public:
-    MySamplerVoice();
-    ~MySamplerVoice() override;
+    SynthVoice();
+    ~SynthVoice() override;
     //==============================================================================
     bool canPlaySound(SynthesiserSound*) override;
 
@@ -61,34 +63,21 @@ public:
     void pitchWheelMoved(int newValue) override;
     void controllerMoved(int controllerNumber, int newValue) override;
 
+    void prepareToPlay(double sampleRate, int samplesPerBlock, int outputChanels);
+
     void renderNextBlock(AudioBuffer<float>&, int startSample, int numSamples) override;
     using SynthesiserVoice::renderNextBlock;
 
-    double getSamplePosition() { return sourceSamplePosition; }
     ADSR& getADSR() { return adsr; }
 private:
     //==============================================================================
     double pitchRatio = 0;
-    double sourceSamplePosition = 0;
     float lgain = 0, rgain = 0;
 
+    juce::dsp::Oscillator<float> osc{ [](float x) {return sin(x); } };
+    dsp::Gain<float> gain;
     ADSR adsr;
-    //std::shared_ptr<ADSR> adsr;
+    bool isPrepared{ false };
 
-    JUCE_LEAK_DETECTOR(SamplerVoice)
-};
-
-
-class FFTSamplerVoice : public MySamplerVoice
-{
-public:
-    FFTSamplerVoice(fftw_complex* audioFreq);
-    ~FFTSamplerVoice() override;
-    void startNote(int midiNoteNumber, float velocity, SynthesiserSound*, int pitchWheel) override;
-    //void stopNote(float velocity, bool allowTailOff) override;
-    void renderNextBlock(AudioBuffer<float>&, int startSample, int numSamples) override;
-
-private:
-    fftw_complex* freq;
-    JUCE_LEAK_DETECTOR(FFTSamplerVoice)
+    JUCE_LEAK_DETECTOR(SynthVoice)
 };

@@ -24,12 +24,14 @@ SimpleSamperAudioProcessor::SimpleSamperAudioProcessor()
 {
     mAPVTS.state.addListener(this);
     mFormatManager.registerBasicFormats();
-    recreateSamplerVoices();
+    recreateSamplerVoices(16);
 }
 
 SimpleSamperAudioProcessor::~SimpleSamperAudioProcessor()
 {
     mFormatReader = nullptr;
+    mSampler.clearSounds();
+    mSampler.clearVoices();
 }
 
 //==============================================================================
@@ -98,8 +100,16 @@ void SimpleSamperAudioProcessor::changeProgramName (int index, const juce::Strin
 void SimpleSamperAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     mSampler.setCurrentPlaybackSampleRate(sampleRate);
-
+    SampleRate = sampleRate;
+    samplesPerBlock = samplesPerBlock;
     updateADSR();
+    auto numVoice = mSampler.getNumVoices();
+    for (int i = 0; i < numVoice; ++i)
+    {
+        if (auto voice = dynamic_cast<SynthVoice*>(mSampler.getVoice(i))) {
+            voice->prepareToPlay(SampleRate, samplesPerBlock, getTotalNumOutputChannels());
+        }
+    }
 }
 
 void SimpleSamperAudioProcessor::releaseResources()
@@ -188,7 +198,8 @@ void SimpleSamperAudioProcessor::recreateSamplerVoices(int numVoices)
     }
 
     for (int i = 0; i < numVoices; ++i) {
-        mSampler.addVoice(new MySamplerVoice());
+        //mSampler.addVoice(new MySamplerVoice());
+        mSampler.addVoice(new SynthVoice());
     }
 }
 
@@ -220,7 +231,8 @@ void SimpleSamperAudioProcessor::loadFile(const String& path)
     BigInteger range;
     range.setRange(0, 128, true);
 
-    mSampler.addSound(new MySamplerSound("Sample", *mFormatReader, range, 60, 0.1, 0.1, 10.0));
+    //mSampler.addSound(new MySamplerSound("Sample", *mFormatReader, range, 60, 0.1, 0.1, 10.0));
+    mSampler.addSound(new SynthSound(44100, range, 5000, getTotalNumOutputChannels(), 60, 0.1, 0.1));
 
     FileLoaded.sendActionMessage("");
 }

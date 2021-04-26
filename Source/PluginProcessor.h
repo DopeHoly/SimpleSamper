@@ -87,6 +87,8 @@ private:
     void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
 
     std::atomic<bool> mShouldUpdate{ true };
+    double SampleRate;
+    int samplesPerBlock;
 
     void recreateSamplerVoices(int numVoices = 0);
     //==============================================================================

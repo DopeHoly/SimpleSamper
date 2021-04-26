@@ -15,7 +15,8 @@ SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamper
     audioProcessor (p), 
     mWaveThumbnail(p), 
     mADSRComponent(p), 
-    mFileLoaderListener(nullptr)//,
+    mFileLoaderListener(nullptr),
+    mSAComponent()
     //mDragAndDropComponent(p)
 {
     addAndMakeVisible(mWaveThumbnail);
@@ -28,6 +29,9 @@ SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamper
     mFileLoaderListener.setFunction(std::bind(&SimpleSamperAudioProcessorEditor::FileLoaded, this));
     audioProcessor.getBroadcasterFileLoaded().addActionListener(&mFileLoaderListener);
 
+    //audioProcessor.loadFile("C:\\ProgramData\\Ableton\\Live 10 Suite\\Resources\\Core Library\\Samples\\Grand Piano\\GrandPiano-A#-1-p.aif");
+    audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\A440.wav");
+    //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\Chords.wav");
     startTimerHz(30);
 
     setSize (700, 600);

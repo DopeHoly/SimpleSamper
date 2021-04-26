@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "SpectrumAnalyzer.h"
 
 //==============================================================================
 /*
@@ -25,10 +26,12 @@ public:
     void resized() override;
 
     void SetSample(std::vector<float>& points);
+    void SetSample(std::vector<OSC_Setting>* points);
 
 private:
 
     std::vector<float> mPoints;
+    std::vector<OSC_Setting> mPoints2;
 
     Image mBufferImage;
 
