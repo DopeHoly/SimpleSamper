@@ -30,7 +30,9 @@ SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamper
     audioProcessor.getBroadcasterFileLoaded().addActionListener(&mFileLoaderListener);
 
     //audioProcessor.loadFile("C:\\ProgramData\\Ableton\\Live 10 Suite\\Resources\\Core Library\\Samples\\Grand Piano\\GrandPiano-A#-1-p.aif");
-    audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\A440.wav");
+    //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\A440.wav");
+    audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\2kWave.wav");
+    //audioProcessor.loadFile("D:\\YandexDisk\\5kWave.wav");
     //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\Chords.wav");
     startTimerHz(30);
 

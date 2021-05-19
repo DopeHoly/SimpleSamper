@@ -30,57 +30,40 @@ public:
         If lookup table is not zero, then the function will be approximated
         with a lookup table.
     */
-    MyOscillator(const std::function<NumericType(NumericType)>& function,
-        size_t lookupTableNumPoints = 0)
+    MyOscillator(const std::function<NumericType(NumericType)>& function)
     {
-        initialise(function, lookupTableNumPoints);
+        initialise(function);
     }
 
     /** Returns true if the Oscillator has been initialised. */
     bool isInitialised() const noexcept { return static_cast<bool> (generator); }
 
     /** Initialises the oscillator with a waveform. */
-    void initialise(const std::function<NumericType(NumericType)>& function,
-        size_t lookupTableNumPoints = 0)
+    void initialise(const std::function<NumericType(NumericType)>& function)
     {
-        if (lookupTableNumPoints != 0)
-        {
-            auto* table = new LookupTableTransform<NumericType>(function,
-                -MathConstants<NumericType>::pi,
-                MathConstants<NumericType>::pi,
-                lookupTableNumPoints);
-
-            lookupTable.reset(table);
-            generator = [table](NumericType x) { return (*table) (x); };
-        }
-        else
-        {
-            generator = function;
-        }
+        generator = function;
+        m_frequency = 500;
+        m_phase = 0.0;
+        m_time = 0.0;
+        cnt = 0;
     }
 
     //==============================================================================
     /** Sets the frequency of the oscillator. */
-    void setFrequency(NumericType newFrequency, bool force = false) noexcept
+    void setFrequency(NumericType newFrequency) noexcept
     {
-        if (force)
-        {
-            frequency.setCurrentAndTargetValue(newFrequency);
-            return;
-        }
-
-        frequency.setTargetValue(newFrequency);
+        m_frequency = newFrequency;
     }
 
     /** Returns the current frequency of the oscillator. */
-    NumericType getFrequency() const noexcept { return frequency.getTargetValue(); }
+    NumericType getFrequency() const noexcept { return m_frequency; }
 
     //==============================================================================
     /** Called before processing starts. */
     void prepare(const ProcessSpec& spec) noexcept
     {
         sampleRate = static_cast<NumericType> (spec.sampleRate);
-        rampBuffer.resize((int)spec.maximumBlockSize);
+        m_deltaTime = 1 / sampleRate;
 
         reset();
     }
@@ -88,10 +71,8 @@ public:
     /** Resets the internal state of the oscillator */
     void reset() noexcept
     {
-        phase.reset();
-
-        if (sampleRate > 0)
-            frequency.reset(sampleRate, 0.05);
+        cnt = 0;
+        m_time = 0.0;
     }
 
     //==============================================================================
@@ -99,134 +80,142 @@ public:
     SampleType JUCE_VECTOR_CALLTYPE processSample(SampleType input) noexcept
     {
         jassert(isInitialised());
-        auto increment = MathConstants<NumericType>::twoPi * frequency.getNextValue() / sampleRate;
-        return input + generator(phase.advance(increment) - MathConstants<NumericType>::pi);
+        //auto increment = MathConstants<NumericType>::twoPi * frequency.getNextValue() / sampleRate;
+        auto value = input + generator(2.0 * double_Pi * m_frequency * m_time + m_phase);
+        m_time += m_deltaTime;
+        ++cnt;
+        if (cnt == sampleRate) {
+            cnt = 0;
+            m_time = 0.0;
+        }
+        return value;
     }
 
     /** Processes the input and output buffers supplied in the processing context. */
     template <typename ProcessContext>
     void process(const ProcessContext& context) noexcept
     {
-        jassert(isInitialised());
-        auto&& outBlock = context.getOutputBlock();
-        auto&& inBlock = context.getInputBlock();
+        //jassert(isInitialised());
+        //auto&& outBlock = context.getOutputBlock();
+        //auto&& inBlock = context.getInputBlock();
 
-        // this is an output-only processor
-        jassert(outBlock.getNumSamples() <= static_cast<size_t> (rampBuffer.size()));
+        //// this is an output-only processor
+        ////jassert(outBlock.getNumSamples() <= static_cast<size_t> (rampBuffer.size()));
 
-        auto len = outBlock.getNumSamples();
-        auto numChannels = outBlock.getNumChannels();
-        auto inputChannels = inBlock.getNumChannels();
-        auto baseIncrement = MathConstants<NumericType>::twoPi / sampleRate;
+        //auto len = outBlock.getNumSamples();
+        //auto numChannels = outBlock.getNumChannels();
+        //auto inputChannels = inBlock.getNumChannels();
+        //auto baseIncrement = MathConstants<NumericType>::twoPi / sampleRate;
 
-        if (context.isBypassed)
-            context.getOutputBlock().clear();
+        //if (context.isBypassed)
+        //    context.getOutputBlock().clear();
 
-        if (frequency.isSmoothing())
-        {
-            auto* buffer = rampBuffer.getRawDataPointer();
+        //if (frequency.isSmoothing())
+        //{
+        //    auto* buffer = rampBuffer.getRawDataPointer();
 
-            for (size_t i = 0; i < len; ++i)
-                buffer[i] = phase.advance(baseIncrement * frequency.getNextValue())
-                - MathConstants<NumericType>::pi;
+        //    for (size_t i = 0; i < len; ++i)
+        //        buffer[i] = phase.advance(baseIncrement * frequency.getNextValue())
+        //        - MathConstants<NumericType>::pi;
 
-            if (!context.isBypassed)
-            {
-                size_t ch;
+        //    if (!context.isBypassed)
+        //    {
+        //        size_t ch;
 
-                if (context.usesSeparateInputAndOutputBlocks())
-                {
-                    for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
-                    {
-                        auto* dst = outBlock.getChannelPointer(ch);
-                        auto* src = inBlock.getChannelPointer(ch);
+        //        if (context.usesSeparateInputAndOutputBlocks())
+        //        {
+        //            for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
+        //            {
+        //                auto* dst = outBlock.getChannelPointer(ch);
+        //                auto* src = inBlock.getChannelPointer(ch);
 
-                        for (size_t i = 0; i < len; ++i)
-                            dst[i] = src[i] + generator(buffer[i]);
-                    }
-                }
-                else
-                {
-                    for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
-                    {
-                        auto* dst = outBlock.getChannelPointer(ch);
+        //                for (size_t i = 0; i < len; ++i)
+        //                    dst[i] = src[i] + generator(buffer[i]);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
+        //            {
+        //                auto* dst = outBlock.getChannelPointer(ch);
 
-                        for (size_t i = 0; i < len; ++i)
-                            dst[i] += generator(buffer[i]);
-                    }
-                }
+        //                for (size_t i = 0; i < len; ++i)
+        //                    dst[i] += generator(buffer[i]);
+        //            }
+        //        }
 
-                for (; ch < numChannels; ++ch)
-                {
-                    auto* dst = outBlock.getChannelPointer(ch);
+        //        for (; ch < numChannels; ++ch)
+        //        {
+        //            auto* dst = outBlock.getChannelPointer(ch);
 
-                    for (size_t i = 0; i < len; ++i)
-                        dst[i] = generator(buffer[i]);
-                }
-            }
-        }
-        else
-        {
-            auto freq = baseIncrement * frequency.getNextValue();
-            auto p = phase;
+        //            for (size_t i = 0; i < len; ++i)
+        //                dst[i] = generator(buffer[i]);
+        //        }
+        //    }
+        //}
+        //else
+        //{
+        //    auto freq = baseIncrement * frequency.getNextValue();
+        //    auto p = phase;
 
-            if (context.isBypassed)
-            {
-                frequency.skip(static_cast<int> (len));
-                p.advance(freq * static_cast<NumericType> (len));
-            }
-            else
-            {
-                size_t ch;
+        //    if (context.isBypassed)
+        //    {
+        //        frequency.skip(static_cast<int> (len));
+        //        p.advance(freq * static_cast<NumericType> (len));
+        //    }
+        //    else
+        //    {
+        //        size_t ch;
 
-                if (context.usesSeparateInputAndOutputBlocks())
-                {
-                    for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
-                    {
-                        p = phase;
-                        auto* dst = outBlock.getChannelPointer(ch);
-                        auto* src = inBlock.getChannelPointer(ch);
+        //        if (context.usesSeparateInputAndOutputBlocks())
+        //        {
+        //            for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
+        //            {
+        //                p = phase;
+        //                auto* dst = outBlock.getChannelPointer(ch);
+        //                auto* src = inBlock.getChannelPointer(ch);
 
-                        for (size_t i = 0; i < len; ++i)
-                            dst[i] = src[i] + generator(p.advance(freq) - MathConstants<NumericType>::pi);
-                    }
-                }
-                else
-                {
-                    for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
-                    {
-                        p = phase;
-                        auto* dst = outBlock.getChannelPointer(ch);
+        //                for (size_t i = 0; i < len; ++i)
+        //                    dst[i] = src[i] + generator(p.advance(freq) - MathConstants<NumericType>::pi);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            for (ch = 0; ch < jmin(numChannels, inputChannels); ++ch)
+        //            {
+        //                p = phase;
+        //                auto* dst = outBlock.getChannelPointer(ch);
 
-                        for (size_t i = 0; i < len; ++i)
-                            dst[i] += generator(p.advance(freq) - MathConstants<NumericType>::pi);
-                    }
-                }
+        //                for (size_t i = 0; i < len; ++i)
+        //                    dst[i] += generator(p.advance(freq) - MathConstants<NumericType>::pi);
+        //            }
+        //        }
 
-                for (; ch < numChannels; ++ch)
-                {
-                    p = phase;
-                    auto* dst = outBlock.getChannelPointer(ch);
+        //        for (; ch < numChannels; ++ch)
+        //        {
+        //            p = phase;
+        //            auto* dst = outBlock.getChannelPointer(ch);
 
-                    for (size_t i = 0; i < len; ++i)
-                        dst[i] = generator(p.advance(freq) - MathConstants<NumericType>::pi);
-                }
-            }
+        //            for (size_t i = 0; i < len; ++i)
+        //                dst[i] = generator(p.advance(freq) - MathConstants<NumericType>::pi);
+        //        }
+        //    }
 
-            phase = p;
-        }
+        //    phase = p;
+        //}
     }
 
-    NumericType GetPhase() { return phase.phase; };
-    void SetPhase(NumericType value) { phase.phase = value; };
+    NumericType GetPhase() { return m_phase; };
+    void SetPhase(NumericType value) { m_phase = value; };
 
 
 private:
     //==============================================================================
     std::function<NumericType(NumericType)> generator;
-    std::unique_ptr<LookupTableTransform<NumericType>> lookupTable;
-    Array<NumericType> rampBuffer;
-    SmoothedValue<NumericType> frequency{ static_cast<NumericType> (440.0) };
+    NumericType m_frequency;
+    NumericType m_phase;
+    NumericType m_time;
+    int cnt;
+    NumericType m_deltaTime;
     NumericType sampleRate = 48000.0;
-    Phase<NumericType> phase;
 };

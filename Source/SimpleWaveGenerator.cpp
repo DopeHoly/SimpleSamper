@@ -35,6 +35,11 @@ float* SimpleWaveGenerator::renderWave(int numSamples)
     for (int i = 0; i < numSamples; ++i)
         buffer[i] = 0.0;
 
+    for (int j = 0; j < _oscillators.size(); ++j) {
+
+        _oscillators[j]->_osc->reset();
+    }
+
     for (int i = 0; i < numSamples; ++i) {
         for (int j = 0; j < _oscillators.size(); ++j) {
 
@@ -56,7 +61,7 @@ void SimpleWaveGenerator::SetGain(float gain, int id)
     //gainValue = 20 * log10(gain / 43.353780883961484);
     //gainValue = 1/(20 * log10(gain));
     //_gain.setGainLinear(gain/42.0f);
-    _oscillators[id]->_gain->setGainDecibels(gain);
+    _oscillators[id]->_gain->setGainLinear(gain);
 }
 
 float SimpleWaveGenerator::GetFrequency(int id)

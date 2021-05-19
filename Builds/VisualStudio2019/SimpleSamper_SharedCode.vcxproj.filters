@@ -505,10 +505,16 @@
     <ClCompile Include="..\..\Source\SmartOscillator.cpp">
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\SmartWaveGenerator.cpp">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\SynthVoice.cpp">
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\OSC_Setting.cpp">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\ValuesFunc.cpp">
       <Filter>SimpleSamper\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\MyOscillator.cpp">
@@ -2748,10 +2754,16 @@
     <ClInclude Include="..\..\Source\SmartOscillator.h">
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\SmartWaveGenerator.h">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\SynthVoice.h">
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\OSC_Setting.h">
+      <Filter>SimpleSamper\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\ValuesFunc.h">
       <Filter>SimpleSamper\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\MyOscillator.h">

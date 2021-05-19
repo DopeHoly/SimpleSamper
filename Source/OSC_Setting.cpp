@@ -10,10 +10,12 @@
 
 #include "OSC_Setting.h"
 
-OSC_Setting::OSC_Setting(double frequency, double volume, double phase) :
+OSC_Setting::OSC_Setting(double frequency, double volume, double phase, double real, double imag) :
 	freq(frequency),
 	vol(volume),
-	phase(phase)
+	phase(phase),
+	re(real),
+	im(imag)
 {
 }
 

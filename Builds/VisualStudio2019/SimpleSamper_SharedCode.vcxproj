@@ -149,8 +149,10 @@
     <ClCompile Include="..\..\Source\SimpleWaveGenerator.cpp"/>
     <ClCompile Include="..\..\Source\SpectrumAnalyzerComponent.cpp"/>
     <ClCompile Include="..\..\Source\SmartOscillator.cpp"/>
+    <ClCompile Include="..\..\Source\SmartWaveGenerator.cpp"/>
     <ClCompile Include="..\..\Source\SynthVoice.cpp"/>
     <ClCompile Include="..\..\Source\OSC_Setting.cpp"/>
+    <ClCompile Include="..\..\Source\ValuesFunc.cpp"/>
     <ClCompile Include="..\..\Source\MyOscillator.cpp"/>
     <ClCompile Include="C:\JUCE\modules\juce_audio_basics\buffers\juce_AudioChannelSet.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
@@ -2211,8 +2213,10 @@
     <ClInclude Include="..\..\Source\SimpleWaveGenerator.h"/>
     <ClInclude Include="..\..\Source\SpectrumAnalyzerComponent.h"/>
     <ClInclude Include="..\..\Source\SmartOscillator.h"/>
+    <ClInclude Include="..\..\Source\SmartWaveGenerator.h"/>
     <ClInclude Include="..\..\Source\SynthVoice.h"/>
     <ClInclude Include="..\..\Source\OSC_Setting.h"/>
+    <ClInclude Include="..\..\Source\ValuesFunc.h"/>
     <ClInclude Include="..\..\Source\MyOscillator.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>

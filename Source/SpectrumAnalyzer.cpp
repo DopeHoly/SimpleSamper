@@ -81,18 +81,37 @@ fftw_complex* SpectrumAnalyzer::PrepareData(int position)
 
 fftw_complex* SpectrumAnalyzer::PrepareData(float* buffer, int windowsSize, int position)
 {
-	fftw_complex* compexData = new fftw_complex[mWindowSize];
+	fftw_complex* compexData = new fftw_complex[windowsSize];
 
 	int curPosition;
 	fftw_complex temp;
+	for (auto i = 0; i < windowsSize; i++) {
+		curPosition = position + i;
+		auto value = buffer[curPosition];// *Gausse(i, windowsSize);
+
+		if (UseWindow)
+			value *= Gausse(i, mWindowSize);
+
+		compexData[i][0] = value;
+		compexData[i][1] = 0;
+	}
+	return compexData;
+}
+
+juce::dsp::Complex<float>* SpectrumAnalyzer::PrepareDataJuceComplex(float* buffer, int windowsSize, int position)
+{
+	juce::dsp::Complex<float>* compexData = new juce::dsp::Complex<float>[mWindowSize];
+
+	int curPosition;
+	juce::dsp::Complex<float> temp;
 	for (auto i = 0; i < mWindowSize; i++) {
 		curPosition = position + i;
-		temp[0] = 0;
-		temp[0] = buffer[curPosition] * Gausse(i, mWindowSize);//windowHanning(i, N);
-		temp[1] = 0;
+		temp.real(0);
+		temp.real(buffer[curPosition] * Gausse(i, mWindowSize));//windowHanning(i, N);
+		temp.imag(0);
 
-		compexData[i][0] = temp[0];
-		compexData[i][1] = temp[1];
+		compexData[i].real(temp.real());
+		compexData[i].imag(temp.imag());
 	}
 	return compexData;
 }
@@ -116,7 +135,7 @@ std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::GetJoinedSpectrum(ff
 	auto frameSize = mWindowSize / 2;
 	auto frameTime = double(frameSize) / double(mSampleRate);
 	auto shiftTime = frameTime / shiftsPerFrame; 
-	auto binToFrequancy = double(mSampleRate) / double(frameSize);
+	auto binToFrequancy = double(mSampleRate) / double(mWindowSize);
 	auto winSum = windowsSum(mWindowSize);
 
  	for (auto bin = 0; bin < frameSize; bin++)
@@ -127,20 +146,20 @@ std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::GetJoinedSpectrum(ff
 		auto imag1 = spec1[bin][1];
 		auto spectre0Magnitude = hypot(real0, imag0);
 		auto spectre1Magnitude = hypot(real1, imag1);
-		auto spectre0Phase = atan2(real0, imag0);
-		auto spectre1Phase = atan2(real1, imag1);
+		auto spectre0Phase = atan2(imag0,real0);
+		auto spectre1Phase = atan2(imag1, real1);
 
 		auto omegaExpected = DoublePi * (bin * binToFrequancy); // ω=2πf
 		auto omegaActual = (spectre1Phase - spectre0Phase) / shiftTime; // ω=∂φ/∂t
 		auto omegaDelta = Align(omegaActual - omegaExpected, DoublePi); // Δω=(∂ω + π)%2π - π
 		auto binDelta = omegaDelta / (DoublePi * binToFrequancy);
-		auto frequancyActual = (bin + binDelta) * binToFrequancy / 2.0;
+		auto frequancyActual = (bin + binDelta) * binToFrequancy;
 
 		auto mag0 = 10 * log10(spectre0Magnitude);
 		auto mag1 = 10 * log10(spectre1Magnitude);
 		auto magnitude = spectre1Magnitude + spectre0Magnitude;
 		magnitude *= 0.5 + abs(binDelta);
-		magnitude *= 2.0 / winSum;
+		//magnitude *= 2.0 / winSum;
 
 		if (trunc(frequancyActual) == 440) {
 			auto stop = 1;
@@ -219,7 +238,7 @@ bool SpectrumAnalyzer::ExportFrequancyToCSV(String path, std::vector<OSC_Setting
 	auto file = File(path);
 	std::ofstream myfile;
 	myfile.open(path.toStdString());
-	myfile << "freq;vol;phase" << std::endl;
+	myfile << "freq;vol;phase;re;im" << std::endl;
 	auto cnt = dict.size();
 	for (int i = 0; i < cnt; ++i) {
 		auto item = dict[i];
@@ -232,7 +251,13 @@ bool SpectrumAnalyzer::ExportFrequancyToCSV(String path, std::vector<OSC_Setting
 		auto phase = std::to_string(item.phase);
 		std::replace(phase.begin(), phase.end(), '.', ',');
 
-		myfile << freq << ';' << vol << ';' << phase <<  std::endl;
+		auto re = std::to_string(item.re);
+		std::replace(re.begin(), re.end(), '.', ',');
+
+		auto im = std::to_string(item.im);
+		std::replace(im.begin(), im.end(), '.', ',');
+
+		myfile << freq << ';' << vol << ';' << phase << ';' << re << ';' << im << std::endl;
 	}
 	myfile.close();
 	return true;
@@ -251,10 +276,88 @@ std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::GetJoinedSpectrumSim
 		auto spectre0Magnitude = hypot(real0, imag0);
 		auto spectre0Phase = atan2(imag0, real0);
 		auto magnitude = spectre0Magnitude;
-		magnitude *= 2.0 / winSum;
+
+		if (UseWindow)
+			magnitude *= 2.0 / winSum;
 		auto frequancyActual = binToFrequancy * bin;
 
-		auto phase = spectre0Phase + ((3.0 * M_PI) / 4.0);
+		auto phase = spectre0Phase;
+
+		//if (real0 < 0) {
+		//	if (imag0 > 0)
+		//		phase += -MathConstants<double>::pi;
+		//	else
+		//	if (imag0 < 0)
+		//		phase += MathConstants<double>::pi;
+		//}
+
+		dictionary->push_back(OSC_Setting((bin == 0) ? 0.01 : frequancyActual,
+			20.0 * log10(magnitude / frameSize),
+			phase,
+			real0,
+			imag0
+		));
+	}
+	return dictionary;
+}
+
+std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::GetJoinedSpectrumSimple(mycomplex* spec0)
+{
+	auto dictionary = std::make_unique<std::vector<OSC_Setting>>();
+	auto frameSize = mWindowSize / 2;
+	auto frameTime = double(frameSize) / double(mSampleRate);
+	auto binToFrequancy = double(mSampleRate) / double(mWindowSize);
+	auto winSum = windowsSum(mWindowSize);
+	for (auto bin = 0; bin < frameSize; bin++) {
+		auto real0 = spec0[bin].i;
+		auto imag0 = spec0[bin].r;
+		auto spectre0Magnitude = hypot(real0, imag0);
+		auto spectre0Phase = atan2(imag0, real0);
+		auto magnitude = spectre0Magnitude;
+		if (UseWindow)
+			magnitude *= 2.0 / winSum;
+		auto frequancyActual = binToFrequancy * bin;
+
+		auto phase = spectre0Phase;
+
+		//if (real0 < 0) {
+		//	if (imag0 > 0)
+		//		phase += -MathConstants<double>::pi;
+		//	else
+		//	if (imag0 < 0)
+		//		phase += MathConstants<double>::pi;
+		//}
+
+		dictionary->push_back(OSC_Setting(/*(bin == 0) ? 0.01 : */frequancyActual,
+			//20.0 * log10(magnitude / frameSize),
+			magnitude,
+			phase,
+			real0,
+			imag0
+		));
+	}
+	return dictionary;
+}
+
+std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::GetJoinedSpectrumSimple(juce::dsp::Complex<float>* spec0)
+{
+	auto dictionary = std::make_unique<std::vector<OSC_Setting>>();
+	auto frameSize = mWindowSize / 2;
+	auto frameTime = double(frameSize) / double(mSampleRate);
+	auto binToFrequancy = double(mSampleRate) / double(mWindowSize);
+	auto winSum = windowsSum(mWindowSize);
+	for (auto bin = 0; bin < frameSize; bin++) {
+		auto real0 = spec0[bin].real();
+		auto imag0 = spec0[bin].imag();
+		auto spectre0Magnitude = hypot(real0, imag0);
+		auto spectre0Phase = atan2(imag0, real0);
+		auto magnitude = spectre0Magnitude;
+
+		if (UseWindow)
+			magnitude *= 2.0 / winSum;
+		auto frequancyActual = binToFrequancy * bin;
+
+		auto phase = spectre0Phase;
 
 		if (trunc(frequancyActual) == 440) {
 			auto stop = 1;
@@ -280,6 +383,63 @@ bool SpectrumAnalyzer::ExportWaveToCSV(String path, float* data, int size, int s
 		std::replace(value.begin(), value.end(), '.', ',');
 
 		myfile << value << std::endl;
+	}
+	myfile.close();
+	return true;
+}
+
+bool SpectrumAnalyzer::ExportComplexToCSV(String path, fftw_complex* data, int size)
+{
+	auto file = File(path);
+	std::ofstream myfile;
+	myfile.open(path.toStdString());
+	myfile << "real;imag" << std::endl;
+	for (int i = 0; i < size; ++i) {
+
+		auto re = std::to_string(data[i][0]);
+		auto im = std::to_string(data[i][1]);
+		std::replace(re.begin(), re.end(), '.', ',');
+		std::replace(im.begin(), im.end(), '.', ',');
+
+		myfile << re << ";" << im << std::endl;
+	}
+	myfile.close();
+	return true;
+}
+
+bool SpectrumAnalyzer::ExportComplexToCSV(String path, mycomplex* data, int size)
+{
+	auto file = File(path);
+	std::ofstream myfile;
+	myfile.open(path.toStdString());
+	myfile << "real;imag" << std::endl;
+	for (int i = 0; i < size; ++i) {
+
+		auto re = std::to_string(data[i].r);
+		auto im = std::to_string(data[i].i);
+		std::replace(re.begin(), re.end(), '.', ',');
+		std::replace(im.begin(), im.end(), '.', ',');
+
+		myfile << re << ";" << im << std::endl;
+	}
+	myfile.close();
+	return true;
+}
+
+bool SpectrumAnalyzer::ExportComplexToCSV(String path, juce::dsp::Complex<float>* data, int size)
+{
+	auto file = File(path);
+	std::ofstream myfile;
+	myfile.open(path.toStdString());
+	myfile << "real;imag" << std::endl;
+	for (int i = 0; i < size; ++i) {
+
+		auto re = std::to_string(data[i].real());
+		auto im = std::to_string(data[i].imag());
+		std::replace(re.begin(), re.end(), '.', ',');
+		std::replace(im.begin(), im.end(), '.', ',');
+
+		myfile << re << ";" << im << std::endl;
 	}
 	myfile.close();
 	return true;
@@ -316,6 +476,22 @@ OSC_Setting& SpectrumAnalyzer::findMaxFreq(std::vector<OSC_Setting>& dict)
 		}
 	}
 	return *max;
+}
+
+int SpectrumAnalyzer::findMaxFreqId(std::vector<OSC_Setting>& dict)
+{
+	auto maxDB = -DBL_MAX;
+	//OSC_Setting* max{ nullptr };
+	int maxId = -1;
+	auto cnt = dict.size();
+	for (int i = 0; i < cnt; ++i) {
+		auto item = &dict[i];
+		if (maxDB < item->vol) {
+			maxDB = item->vol;
+			maxId = i;
+		}
+	}
+	return maxId;
 }
 
 std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::Antialiasing(std::vector<OSC_Setting>& data)
@@ -408,80 +584,172 @@ float* DiffWave(float* a, float* b, int size) {
 	return difWave;
 }
 
-void SpectrumAnalyzer::CorrectPhase(float* sourceWave, int size, std::vector<OSC_Setting>& data)
+void SpectrumAnalyzer::CorrectPhase(std::vector<OSC_Setting>& data)
 {
-	OSC_Setting* oscSetting = nullptr;
 	float* wave;
-	float* difwave;
-	auto step = 0.01;
-
-	double currentSum;
-	double bestSum = INFINITY;
+	fftw_plan p;
+	OSC_Setting* oscSetting = nullptr;
 	double bestPhase;
+	std::unique_ptr<std::vector<OSC_Setting>> resultWave;
+	auto defaultPhase = -MathConstants<float>::pi;
+	SimpleWaveGenerator waveGenerator(mSampleRate, 50000, 1);
+	waveGenerator.InitOscillators();
+	waveGenerator.SetPhase(defaultPhase);
 
-	SimpleWaveGenerator waveGenerator (mSampleRate, 50000, 1);
 	for (int j = 0; j < data.size(); ++j) 
 	{
 		oscSetting = &data[j];
-		for (double i = -MathConstants<float>::pi; i < MathConstants<float>::pi; i += step) 
-		{
-			oscSetting->phase = i;
+		waveGenerator.SetFrequency(trunc(oscSetting->freq));
+		wave = waveGenerator.renderWave(mWindowSize);
 
-			waveGenerator.InitOscillators(data, j + 1);
-			wave = waveGenerator.renderWave(size);
-			difwave = DiffWave(sourceWave, wave, size);
+		//oscSetting->phase = bestPhase; 
+		fftw_complex* waveComplex = new fftw_complex[mWindowSize];
+		auto frameWave0 = PrepareData(wave, mWindowSize, 0);
+		p = fftw_plan_dft_1d(mWindowSize, frameWave0, waveComplex, FFTW_FORWARD, FFTW_ESTIMATE);
+		fftw_execute(p);
+		fftw_destroy_plan(p);
+		resultWave = GetJoinedSpectrumSimple(waveComplex);
+		auto maxFreq = findMaxFreq(*resultWave);
+		auto phaseDif = defaultPhase - maxFreq.phase;
+		auto curentPhase = oscSetting->phase + phaseDif;
+		auto minusnormalizePhase = curentPhase < -MathConstants<float>::pi ? curentPhase + MathConstants<float>::twoPi : curentPhase;
+		auto normalizePhase = minusnormalizePhase > MathConstants<float>::pi ? minusnormalizePhase - MathConstants<float>::twoPi : minusnormalizePhase;
+		oscSetting->phase = normalizePhase;
 
-			delete[] wave;
-
-			currentSum = getSum(difwave, size);
-
-			delete[] difwave;
-
-			if (currentSum < bestSum) {
-				bestSum = currentSum;
-				bestPhase = i;
-			}
-		}
-
-		oscSetting->phase = bestPhase;
+		delete[] wave;
+		fftw_free(waveComplex);
+		fftw_free(frameWave0);
+		resultWave->clear();
 	}
-
 }
 
 void SpectrumAnalyzer::CalcPhaseDif() 
 {
+	bool useJuceFFT = true;
+
+	FFTMethod curentMethod = Mine;
+
 	float* wave;
 	fftw_plan p;
-	auto step = 0.01;
+	//auto step = 0.01;
+
+	double ShiftsPerFrame = 32;//1.0 / 32.0;
+	double step = double(mWindowSize) / ShiftsPerFrame;
+
 	auto dictionary = std::make_unique<std::vector<OSC_Setting>>();
 	SimpleWaveGenerator waveGenerator(mSampleRate, 50000, 1);
 	waveGenerator.InitOscillators();
-	waveGenerator.SetFrequency(440);
+	//waveGenerator.SetFrequency(1000);
+	waveGenerator.SetGain(0.25);
 
-	for (double i = -MathConstants<float>::pi; i < MathConstants<float>::pi; i += step) {
-		waveGenerator.SetPhase(i);
+	waveGenerator.SetPhase(0);
 
+	juce::dsp::FFT forwardFFT(mWindowSize);
+	std::unique_ptr<std::vector<OSC_Setting>> resultWave;
+
+	//for (double i = -MathConstants<float>::pi; i <= MathConstants<float>::pi; i += step) {
+		//waveGenerator.SetPhase(i);
+	for (double i = 20; i <= 2000; ++i ) {
+		//waveGenerator.SetPhase(i);
+		waveGenerator.SetFrequency(i);
 		wave = waveGenerator.renderWave(mWindowSize);
+		//wave = waveGenerator.renderWave(mWindowSize + step);
 
-		fftw_complex* waveComplex = new fftw_complex[mWindowSize];
-		auto frameWave0 = PrepareData(wave, mWindowSize, 0);
+		switch (curentMethod)
+		{
+		case Juce:
+		{
+			juce::dsp::Complex<float>* waveComplex = PerformFFTJuce(wave, mWindowSize);
+			resultWave = GetJoinedSpectrumSimple(waveComplex);
+			delete[] waveComplex;
+		}
+			break;
+		case FFTW: 
+		{
+			fftw_complex* waveComplex = PerformFFT(wave, mWindowSize);
+			resultWave = GetJoinedSpectrumSimple(waveComplex);
+			fftw_free(waveComplex);
+		}
+			break;
+		case Mine:
+		{
+			auto waveComplex = PerformFFT2(wave, mWindowSize);
+			resultWave = GetJoinedSpectrumSimple(waveComplex);
+			delete[] waveComplex;
+		}
+			break;
+		case Overlap:
+		{
+			delete[] wave;
+			wave = waveGenerator.renderWave(mWindowSize + step);
+			//auto waveComplex = GetJoinedSpectrumWave(wave, mWindowSize, ShiftsPerFrame);
+			resultWave = GetJoinedSpectrumWave(wave, mWindowSize, ShiftsPerFrame);
+			//delete[] waveComplex;
+		}
+			break;
+		default:
+			break;
+		}
+
 		delete[] wave;
 
-		p = fftw_plan_dft_1d(mWindowSize, frameWave0, waveComplex, FFTW_FORWARD, FFTW_ESTIMATE);
-		fftw_execute(p);
-		fftw_destroy_plan(p);
-		auto resultWave = GetJoinedSpectrumSimple(waveComplex);
-
-		fftw_free(waveComplex);
-		fftw_free(frameWave0);
-
 		auto maxFreq = findMaxFreq(*resultWave);
-		maxFreq.freq = i;
+		//maxFreq.freq = i;
+		//maxFreq.re = GetCenterMassXMaxFreq(*resultWave);
 		dictionary->push_back(maxFreq);
 		resultWave->clear();
 	}
+	//CorrectPhase(*dictionary);
 	ExportFrequancyToCSV("D:\\YandexDisk\\phaseDif.csv", *dictionary);
+	dictionary->clear();
 }
+
+
+fftw_complex* SpectrumAnalyzer::PerformFFT(float* wave, int size, int position) {
+	fftw_plan p;
+	fftw_complex* waveComplex = new fftw_complex[size];
+	auto frameWave4 = PrepareData(wave, size, position);
+	p = fftw_plan_dft_1d(size, frameWave4, waveComplex, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftw_execute(p);
+
+	fftw_destroy_plan(p);
+	fftw_free(frameWave4);
+
+	return waveComplex;
+}
+
+mycomplex* SpectrumAnalyzer::PerformFFT2(float* wave, int size, int position)
+{
+	auto complexData = PreapareComplex(wave, size, position);
+	fftr(complexData, size);
+	return complexData;
+}
+
+juce::dsp::Complex<float>* SpectrumAnalyzer::PerformFFTJuce(float* wave, int size, int position)
+{
+	juce::dsp::FFT forwardFFT(winPow + 1);
+	juce::dsp::Complex<float>* waveComplex = new juce::dsp::Complex<float>[size];
+	auto frameWave0 = PrepareDataJuceComplex(wave, size, position);
+
+	forwardFFT.perform(frameWave0, waveComplex, false);
+	delete[] frameWave0;
+	return waveComplex;
+}
+
+
+std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::GetJoinedSpectrumWave(float* wave, int size, int ShiftsPerFrame)
+{
+	double step = double(size) / double(ShiftsPerFrame);
+
+	auto waveComplex1 = PerformFFT(wave, size, 0);
+	auto waveComplex2 = PerformFFT(wave, size, step);
+
+	auto result = GetJoinedSpectrum(waveComplex1, waveComplex2, step);
+	fftw_free(waveComplex1);
+	fftw_free(waveComplex2);
+	return result;
+}
+
 
 std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::FFTSpectre()
 {
@@ -493,7 +761,11 @@ std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::FFTSpectre()
 	double step = double(mWindowSize) / ShiftsPerFrame;
 
 	std::unique_ptr<std::vector<OSC_Setting>> result{ nullptr };
-
+	SimpleWaveGenerator waveGenerator(mSampleRate, 50000, 1);
+	waveGenerator.InitOscillators();
+	waveGenerator.SetFrequency(5000);
+	waveGenerator.SetGain(0.25);
+	waveGenerator.SetPhase(0);
 
 	if (oldFFT) {
 		fftw_cleanup();
@@ -501,65 +773,37 @@ std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::FFTSpectre()
 		fftw_complex* out0 = new fftw_complex[mWindowSize];
 		fftw_complex* out1 = new fftw_complex[mWindowSize];
 
-		auto sourceWave = GetSourceWave(startPos, mWindowSize + step);
+		auto renderWave = waveGenerator.renderWave(mWindowSize);
 
-		auto frame0 = PrepareData(startPos);
-		auto frame1 = PrepareData(startPos + step);
+		auto sourceWave = GetSourceWave(startPos, mWindowSize/* + step*/);
 
-		p = fftw_plan_dft_1d(mWindowSize, frame0, out0, FFTW_FORWARD, FFTW_ESTIMATE);
-		fftw_execute(p);
-		fftw_destroy_plan(p);
 
-		p = fftw_plan_dft_1d(mWindowSize, frame1, out1, FFTW_FORWARD, FFTW_ESTIMATE);
-		fftw_execute(p);
-		fftw_destroy_plan(p);
+		ExportWaveToCSV("D:\\YandexDisk\\SourceWave.csv", sourceWave, mWindowSize);
+		ExportWaveToCSV("D:\\YandexDisk\\RenderWave.csv", renderWave, mWindowSize);
+
+		auto complexRender = PerformFFT(renderWave, mWindowSize);
+		//CorrectPhaseActive = true;
+		auto complexSource = PerformFFT(sourceWave, mWindowSize);
+
+		//ExportComplexToCSV("D:\\YandexDisk\\complexRender.csv", complexRender, mWindowSize);
+		//ExportComplexToCSV("D:\\YandexDisk\\complexSource.csv", complexSource, mWindowSize);
+
+		auto resultRender = GetJoinedSpectrumSimple(complexRender);
+		auto resultSource = GetJoinedSpectrumSimple(complexSource);
 
 		//result = GetJoinedSpectrum(out0, out1, ShiftsPerFrame);
-		result = GetJoinedSpectrumSimple(out0);
+		//result = GetJoinedSpectrumSimple(out0);
 
-		auto maxFreq = findMaxFreq(*result);
+		auto maxFreqRender = FindPeaks(*resultRender);
+		auto maxFreqSource = FindPeaks(*resultSource);
+		//ExportFrequancyToCSV("D:\\YandexDisk\\Renderpectre.csv", *result);
+
+		//CorrectPhase(*maxFreqRender);
+		//CorrectPhase(*maxFreqSource);
 
 		auto sourcePeaks = FindPeaks(*result);
-		//CorrectPhase(sourceWave, mWindowSize + step, *sourcePeaks);
-		mWaveGenerator.InitOscillators(*sourcePeaks);
 
-		//mWaveGenerator.SetGain(maxFreq.vol + 88.6);
-
-		//mWaveGenerator.SetFrequency(maxFreq.freq);
-
-		auto wave = mWaveGenerator.renderWave(mWindowSize + step);
-
-
-		fftw_complex* wave0 = new fftw_complex[mWindowSize];
-		fftw_complex* wave1 = new fftw_complex[mWindowSize];
-		auto frameWave0 = PrepareData(wave, mWindowSize, 0);
-		auto frameWave1 = PrepareData(wave, mWindowSize, 0 + step);
-
-		p = fftw_plan_dft_1d(mWindowSize, frameWave0, wave0, FFTW_FORWARD, FFTW_ESTIMATE);
-		fftw_execute(p);
-		fftw_destroy_plan(p);
-
-		p = fftw_plan_dft_1d(mWindowSize, frameWave1, wave1, FFTW_FORWARD, FFTW_ESTIMATE);
-		fftw_execute(p);
-		fftw_destroy_plan(p);
-
-		auto resultWave = GetJoinedSpectrum(wave0, wave1, ShiftsPerFrame);
-		auto maxFreqWave = findMaxFreq(*resultWave);
-		auto gainMax = maxFreqWave.vol;
-
-		//auto sourcePeaks = FindPeaks(*result);
-		auto wavePeaks = FindPeaks(*resultWave);
-
-		//ExportFrequancyToCSV("D:\\YandexDisk\\freq.csv", *result); 
-		//ExportFrequancyToCSV("D:\\YandexDisk\\wave.csv", *resultWave);
-		//ExportWaveToCSV("D:\\YandexDisk\\SourceWave.csv", sourceWave, mWindowSize + step);
-		ExportWaveToCSV("D:\\YandexDisk\\ResultWave.csv", wave, mWindowSize + step);
-
-		//result = Antialiasing(*result);
-		delete[] out0;
-		delete[] out1;
-		delete[] frame0;
-		delete[] frame1;
+		
 	}
 	else {
 		auto frame0 = PreapareComplex(startPos);
@@ -575,8 +819,9 @@ std::unique_ptr<std::vector<OSC_Setting>> SpectrumAnalyzer::FFTSpectre()
 	//ExportToCSV("D:\\YandexDisk\\freq.csv", *result);
 	auto maxFreq = findMaxFreq(*result);
 
-	return result;
+	return result; 
 }
+
 
 double SpectrumAnalyzer::Align(double angle, double period)
 {
@@ -647,21 +892,148 @@ mycomplex* SpectrumAnalyzer::PreapareComplex(int position) {
 	auto buffer = mSample->getReadPointer(0);
 
 	int curPosition;
-	mycomplex temp;
+	double real;
 	for (auto i = 0; i < mWindowSize; i++) {
 		curPosition = position + i;
-		temp.r = 0;
-
-		double window =
-			0.5 - 0.5 * cos(2.0 * M_PI *
-				i / mWindowSize);
+		real = 0;
 
 		if (curPosition < numSamples)
-			temp.r = buffer[curPosition] * Gausse(i, mWindowSize);//windowHanning(i, N);
-		temp.i = 0;
+			real = buffer[curPosition];
 
-		compexData[i].r = temp.r;
-		compexData[i].i = temp.i;
+		if (UseWindow)
+			real *= Gausse(i, mWindowSize);
+
+		compexData[i].r = real;
+		compexData[i].i = 0;
 	}
 	return compexData;
 }
+
+mycomplex* SpectrumAnalyzer::PreapareComplex(float* buffer, int windowsSize, int position)
+{
+	mycomplex* compexData = new mycomplex[windowsSize];
+
+	int curPosition;
+	double real;
+	for (auto i = 0; i < windowsSize; i++) {
+		curPosition = position + i;
+
+		real = buffer[curPosition];
+		if(UseWindow)
+			real *= Gausse(i, mWindowSize);
+
+		compexData[i].r = real;
+		compexData[i].i = 0;
+	}
+	return compexData;
+}
+
+
+//хуйня
+#pragma region CenterMass
+
+void intersect(double a1, double a2, double b1, double b2, double c1, double c2, double& x, double& y)
+{
+	double det = a1 * b2 - a2 * b1;
+	x = (b1 * c2 - b2 * c1) / det;
+	y = (a2 * c1 - a1 * c2) / det;
+}
+
+void LinePosition(double& x, double& y, double x1, double y1, double x2, double y2, double  x3, double y3, double x4, double y4)
+{
+	double a1, a2, b1, b2, c1, c2;
+	// line equation ax + by + c = 0
+	a1 = y1 - y2;
+	b1 = x2 - x1;
+	c1 = x1 * y2 - x2 * y1;
+	a2 = y3 - y4;
+	b2 = x4 - x3;
+	c2 = x3 * y4 - x4 * y3;
+
+	//parall(a1, a2, b1, b2);(a1 / a2) == (b1 / b2)
+
+	intersect(a1, a2, b1, b2, c1, c2, x, y);
+}
+
+//Center mass of sqrTriangle by 0X
+void CenterMass(double& x, double& y, double x1, double y1, double x2, double y2)
+{
+	auto dy = y2 - y1;
+	auto dx = x2 - x1;
+	if (dy == 0) {
+		x = x1 + dx / 2.0;
+		y = y1;
+		return;
+	}
+
+	if (dy > 0) //leftside
+	{
+		LinePosition(x, y, x1, y1, x2, y1 + dy / 2.0, x2, y2, x1 + dx / 2.0, y1);
+	}
+	else //rightside
+	{
+		LinePosition(x, y, x1, y1, x1 + dx / 2.0, y2, x2, y2, x1, y1 + dy / 2.0);
+	}
+}
+
+double CenterMassX(std::vector<OSC_Setting>& data, int idBegin, int idEnd)
+{
+	jassert(data.size() > idEnd);
+
+	double tmpX = 0;
+	double tmpY = 0;
+	double sumX = 0;
+	for (auto i = idBegin; i < idEnd; ++i)
+	{
+		auto curent = data.at(i);
+		auto next = data.at(i + 1);
+		CenterMass(tmpX, tmpY, curent.freq, curent.vol, next.freq, next.vol);
+		sumX += tmpX;
+	}
+	return sumX / double(idEnd - idBegin);
+}
+
+double SpectrumAnalyzer::GetCenterMassXMaxFreq(std::vector<OSC_Setting>& data)
+{
+	//ExportFrequancyToCSV("D:\\YandexDisk\\TestData.csv", data);
+	int maxId = findMaxFreqId(data);
+	int beginId = -1;
+	int endId = -1;
+
+	int curId = maxId;
+	auto curData = &data.at(curId);
+	OSC_Setting* nextData;
+	double dif;
+	//left
+	while (curId - 1 >= 0) {
+		nextData = &data.at(curId - 1);
+		dif = curData->vol - nextData->vol;
+		if (dif <= 0) {
+			beginId = curId;
+			break;
+		}
+		--curId;
+		curData = nextData;
+	}
+
+	curId = maxId;
+	curData = &data.at(curId);
+	//right
+	while (curId + 1 < data.size()) {
+		nextData = &data.at(curId + 1);
+		dif = curData->vol - nextData->vol;
+		if (dif <= 0) {
+			endId = curId;
+			break;
+		}
+		++curId;
+		curData = nextData;
+	}
+
+	beginId = (beginId == -1) ? 0 : beginId;
+	endId = (endId == -1) ? data.size() - 1 : endId;
+
+	return CenterMassX(data, beginId, endId);
+}
+
+#pragma endregion

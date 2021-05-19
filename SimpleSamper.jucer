@@ -47,10 +47,16 @@
             file="Source/SmartOscillator.cpp"/>
       <FILE id="bKPUye" name="SmartOscillator.h" compile="0" resource="0"
             file="Source/SmartOscillator.h"/>
+      <FILE id="GxZDZP" name="SmartWaveGenerator.cpp" compile="1" resource="0"
+            file="Source/SmartWaveGenerator.cpp"/>
+      <FILE id="EBziYr" name="SmartWaveGenerator.h" compile="0" resource="0"
+            file="Source/SmartWaveGenerator.h"/>
       <FILE id="GJekNM" name="SynthVoice.cpp" compile="1" resource="0" file="Source/SynthVoice.cpp"/>
       <FILE id="vMIlUc" name="SynthVoice.h" compile="0" resource="0" file="Source/SynthVoice.h"/>
       <FILE id="paz9g9" name="OSC_Setting.cpp" compile="1" resource="0" file="Source/OSC_Setting.cpp"/>
       <FILE id="AbeQiy" name="OSC_Setting.h" compile="0" resource="0" file="Source/OSC_Setting.h"/>
+      <FILE id="WVLkw1" name="ValuesFunc.cpp" compile="1" resource="0" file="Source/ValuesFunc.cpp"/>
+      <FILE id="gT0Erf" name="ValuesFunc.h" compile="0" resource="0" file="Source/ValuesFunc.h"/>
       <FILE id="aNzbO1" name="MyOscillator.cpp" compile="1" resource="0"
             file="Source/MyOscillator.cpp"/>
       <FILE id="SRxYAA" name="MyOscillator.h" compile="0" resource="0" file="Source/MyOscillator.h"/>
