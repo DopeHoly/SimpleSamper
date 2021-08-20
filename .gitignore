@@ -5,3 +5,14 @@
 /Builds/VisualStudio2019/x64/Debug
 /Builds/VisualStudio2019/.vs/SimpleSamper/v16
 *.diagsession
+*.obj
+*.log
+*.pdb
+*.CopyComplete
+*.recipe
+*.tlog
+*.lib
+*.dll
+*.exe
+*.iobj
+/Builds/VisualStudio2019/x64/Release

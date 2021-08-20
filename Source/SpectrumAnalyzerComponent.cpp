@@ -13,10 +13,9 @@
 
 //==============================================================================
 SpectrumAnalyzerComponent::SpectrumAnalyzerComponent()
-    :
-    mSpectrumAnalyzer(44100, 58000)
     //mPlot(false, glContext)
 {
+    mSpectrumAnalyzer.prepareToPlay(44100, 50000);
     var sliderName = "Position";
     mPositionSlider.setSliderStyle(Slider::SliderStyle::LinearHorizontal);
     mPositionSlider.setColour(mPositionSlider.backgroundColourId, Colours::transparentBlack);

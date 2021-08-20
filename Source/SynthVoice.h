@@ -11,13 +11,15 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <fftw3.h>
+#include "SmartWaveGenerator.h"
+#include "FFT_Tree_Spectre.h"
 
 class SynthSound : public SynthesiserSound
 {
 public:
     SynthSound(
-        double rate,
+        int rate,
+        FFT_Tree_Spectre* spectre,
         const BigInteger& midiNotes,
         uint32 samplePerBlock,
         uint32 numChanels,
@@ -36,13 +38,17 @@ public:
     bool appliesToNote(int midiNoteNumber) override;
     bool appliesToChannel(int midiChannel) override;
 
+    double* GetSample(int midiNoteNumber, int position, int numSamples);
+
 private:
     friend class SynthVoice;
     //==============================================================================
 
-    double SampleRate;
+    WaveStorage* storage;
+    int SampleRate;
     BigInteger midiNotes;
-    int length = 0, midiRootNote = 0;
+    int length{ 0 };
+    int midiRootNote{ 0 };
     ADSR::Parameters params;
 
 
@@ -73,8 +79,12 @@ private:
     //==============================================================================
     double pitchRatio = 0;
     float lgain = 0, rgain = 0;
+    int position{ 0 };
+    int midiNote{ 0 };
+    int mOutputChanels{ 0 };
+    double mVelocity{ 0 };
 
-    juce::dsp::Oscillator<float> osc{ [](float x) {return sin(x); } };
+    //juce::dsp::Oscillator<float> osc{ [](float x) {return sin(x); } };
     dsp::Gain<float> gain;
     ADSR adsr;
     bool isPrepared{ false };

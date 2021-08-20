@@ -15,6 +15,7 @@
 #include "ActiveActionListener.h"
 #include "SpectrumAnalyzerComponent.h"
 #include "SynthVoice.h"
+#include "SpectrogramCWT.h"
 
 //==============================================================================
 /**
@@ -42,13 +43,20 @@ public:
     void timerCallback() override;
 
 private:
+    //Button LoadFile;
+    TextButton mLoadButton{ "Load file" };
+    TextButton mPlaySampleButton{ "Play" };
+    TextButton mStartCalculationButton{ "Calculate" };
+
     SimpleSamperAudioProcessor& audioProcessor;
 
     ActiveActionListener mFileLoaderListener;
+    ActiveActionListener mStartCalculationListener;
 
     WaveThumbnail mWaveThumbnail;
     ADSRComponent mADSRComponent;
     SpectrumAnalyzerComponent mSAComponent;
+    SpectrogramCWT mSpectrogramCWT;
 
     //ntlab::WindowOpenGLContext mglContext;
     Colour DefaultDragDropColour{ Colours::transparentBlack };
@@ -57,6 +65,7 @@ private:
     Colour mCurrentColour{ Colours::transparentBlack };
 
     void FileLoaded();
+    void StartCalculation();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleSamperAudioProcessorEditor)
 };

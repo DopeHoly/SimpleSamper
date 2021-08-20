@@ -1,7 +1,6 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <fftw3.h>
 
 class MySamplerSound : public SynthesiserSound
 {
@@ -79,16 +78,16 @@ private:
 };
 
 
-class FFTSamplerVoice : public MySamplerVoice
-{
-public:
-    FFTSamplerVoice(fftw_complex* audioFreq);
-    ~FFTSamplerVoice() override;
-    void startNote(int midiNoteNumber, float velocity, SynthesiserSound*, int pitchWheel) override;
-    //void stopNote(float velocity, bool allowTailOff) override;
-    void renderNextBlock(AudioBuffer<float>&, int startSample, int numSamples) override;
-
-private:
-    fftw_complex* freq;
-    JUCE_LEAK_DETECTOR(FFTSamplerVoice)
-};
+//class FFTSamplerVoice : public MySamplerVoice
+//{
+//public:
+//    FFTSamplerVoice(fftw_complex* audioFreq);
+//    ~FFTSamplerVoice() override;
+//    void startNote(int midiNoteNumber, float velocity, SynthesiserSound*, int pitchWheel) override;
+//    //void stopNote(float velocity, bool allowTailOff) override;
+//    void renderNextBlock(AudioBuffer<float>&, int startSample, int numSamples) override;
+//
+//private:
+//    fftw_complex* freq;
+//    JUCE_LEAK_DETECTOR(FFTSamplerVoice)
+//};

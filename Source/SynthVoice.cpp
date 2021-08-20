@@ -11,7 +11,8 @@
 #include "SynthVoice.h"
 
 SynthSound::SynthSound(
-    double rate,
+    int rate,
+    FFT_Tree_Spectre* spectre,
     const BigInteger& notes,
     uint32 samplePerBlock,
     uint32 numChanels,
@@ -21,8 +22,12 @@ SynthSound::SynthSound(
     :
     SampleRate(rate),
     midiNotes(notes),
-    midiRootNote(midiNoteForNormalPitch)
+    midiRootNote(midiNoteForNormalPitch),
+    storage(nullptr)
 {
+    storage = new WaveStorage(spectre, notes);
+    storage->prepareToPlay(rate, samplePerBlock, numChanels);
+    length = storage->GetLenght();
     params.attack = static_cast<float> (attackTimeSecs);
     params.release = static_cast<float> (releaseTimeSecs);
 
@@ -31,6 +36,7 @@ SynthSound::SynthSound(
 
 SynthSound::~SynthSound()
 {
+    delete storage;
 }
 
 bool SynthSound::appliesToNote(int midiNoteNumber)
@@ -41,6 +47,11 @@ bool SynthSound::appliesToNote(int midiNoteNumber)
 bool SynthSound::appliesToChannel(int /*midiChannel*/)
 {
     return true;
+}
+
+double* SynthSound::GetSample(int midiNoteNumber, int position, int numSamples)
+{
+    return storage->GetWave(midiNoteNumber, position, numSamples);
 }
 
 
@@ -58,16 +69,19 @@ void SynthVoice::startNote(int midiNoteNumber, float velocity, SynthesiserSound*
 {
     if (auto* sound = dynamic_cast<SynthSound*> (s))
     {
+        position = 0;
+        midiNote = midiNoteNumber;
         pitchRatio = std::pow(2.0, (midiNoteNumber - sound->midiRootNote) / 12.0)
             * sound->SampleRate / getSampleRate();
 
         lgain = velocity;
         rgain = velocity;
-        osc.setFrequency(440.0f * pitchRatio);
+        mVelocity = velocity;
+        //osc.setFrequency(440.0f * pitchRatio);
         //sound->setFreq(440.0f * pitchRatio);
 
-        adsr.setSampleRate(sound->SampleRate);
-        adsr.setParameters(sound->params);
+        //adsr.setSampleRate(sound->SampleRate);
+        //adsr.setParameters(sound->params);
 
         adsr.noteOn();
     }
@@ -100,13 +114,14 @@ void SynthVoice::prepareToPlay(double sampleRate, int samplesPerBlock, int outpu
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
     spec.numChannels = outputChanels;
+    mOutputChanels = outputChanels;
 
-    osc.prepare(spec);
+    //osc.prepare(spec);
     gain.prepare(spec);
         
 
-    osc.setFrequency(440.0f);
-    gain.setGainLinear(0.5f);
+    //osc.setFrequency(440.0f);
+    gain.setGainLinear(1.0f);
 
     isPrepared = true;
 }
@@ -117,6 +132,25 @@ void SynthVoice::renderNextBlock(AudioBuffer<float>& outputBuffer, int startSamp
     jassert(isPrepared);
     if (auto* playingSound = static_cast<SynthSound*> (getCurrentlyPlayingSound().get()))
     {
+        auto wave = playingSound->GetSample(midiNote, position, numSamples);
+        for (int i = 0; i < numSamples; ++i) {
+            for (int j = 0; j < mOutputChanels; ++j) {
+                outputBuffer.setSample(j, i, wave[i] * mVelocity);
+            }
+        }
+
+        dsp::AudioBlock<float> audioBlock{ outputBuffer };
+        gain.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
+        adsr.applyEnvelopeToBuffer(outputBuffer, 0, numSamples);
+
+        position += numSamples;
+
+
+        if (position > playingSound->length)
+        {
+            stopNote(0.0f, false);
+        }
+        
         //auto& osc = playingSound->osc;
         //auto& gain = playingSound->gain;
         /*const float* const inL = data.getReadPointer(0);
@@ -125,10 +159,10 @@ void SynthVoice::renderNextBlock(AudioBuffer<float>& outputBuffer, int startSamp
        /* float* outL = outputBuffer.getWritePointer(0, startSample);
         float* outR = outputBuffer.getNumChannels() > 1 ? outputBuffer.getWritePointer(1, startSample) : nullptr;*/
 
-        dsp::AudioBlock<float> audioBlock{ outputBuffer };
-        osc.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
-        gain.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
-        adsr.applyEnvelopeToBuffer(outputBuffer, 0, numSamples);
+        //dsp::AudioBlock<float> audioBlock{ outputBuffer };
+        //osc.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
+        //gain.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
+        //adsr.applyEnvelopeToBuffer(outputBuffer, 0, numSamples);
         
         //while (--numSamples >= 0)
         //{
@@ -166,5 +200,7 @@ void SynthVoice::renderNextBlock(AudioBuffer<float>& outputBuffer, int startSamp
         //        break;
         //    }
         //}
+
+
     }
 }

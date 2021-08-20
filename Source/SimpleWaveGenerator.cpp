@@ -10,12 +10,8 @@
 
 #include "SimpleWaveGenerator.h"
 
-SimpleWaveGenerator::SimpleWaveGenerator(double sampleRate, int samplesPerBlock, int outputChanels)
+SimpleWaveGenerator::SimpleWaveGenerator()
 {
-    spec.maximumBlockSize = samplesPerBlock;
-    spec.sampleRate = sampleRate;
-    spec.numChannels = 1;
-
     //_osc.prepare(spec);
     //_gain.prepare(spec);
 
@@ -23,14 +19,49 @@ SimpleWaveGenerator::SimpleWaveGenerator(double sampleRate, int samplesPerBlock,
     //_gain.setGainLinear(0.5f);
 }
 
+SimpleWaveGenerator::SimpleWaveGenerator(double sampleRate, int samplesPerBlock, int outputChanels)
+{
+    prepareToPlay(sampleRate, samplesPerBlock, outputChanels);
+}
+
 SimpleWaveGenerator::~SimpleWaveGenerator()
 {
     _oscillators.clear();
 }
 
+void SimpleWaveGenerator::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChanels)
+{
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.sampleRate = sampleRate;
+    spec.numChannels = 1;
+}
+
 float* SimpleWaveGenerator::renderWave(int numSamples)
 {
     auto buffer = new float[numSamples];
+
+    for (int i = 0; i < numSamples; ++i)
+        buffer[i] = 0.0;
+
+    for (int j = 0; j < _oscillators.size(); ++j) {
+
+        _oscillators[j]->_osc->reset();
+    }
+
+    for (int i = 0; i < numSamples; ++i) {
+        for (int j = 0; j < _oscillators.size(); ++j) {
+
+            buffer[i] += _oscillators[j]->_gain->processSample(_oscillators[j]->_osc->processSample(0.0f));
+        }
+    }
+
+    return buffer;
+}
+
+
+double* SimpleWaveGenerator::renderWaveDouble(int numSamples)
+{
+    auto buffer = new double[numSamples];
 
     for (int i = 0; i < numSamples; ++i)
         buffer[i] = 0.0;
@@ -121,3 +152,4 @@ void SimpleWaveGenerator::InitOscillators(std::vector<OSC_Setting>& oscs, int co
         ++counter;
     }
 }
+

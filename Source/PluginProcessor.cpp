@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <omp.h>
 
 //==============================================================================
 SimpleSamperAudioProcessor::SimpleSamperAudioProcessor()
@@ -19,17 +20,22 @@ SimpleSamperAudioProcessor::SimpleSamperAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       ), mAPVTS(*this, nullptr, "PARAMETERS", createParameters())
+                       ), 
+    mAPVTS(*this, nullptr, "PARAMETERS", createParameters())
 #endif
 {
+
+    omp_set_num_threads(12);
     mAPVTS.state.addListener(this);
-    mFormatManager.registerBasicFormats();
+    mFormatManager.registerBasicFormats(); 
+    //transportSource.addChangeListener(this);
     recreateSamplerVoices(16);
 }
 
 SimpleSamperAudioProcessor::~SimpleSamperAudioProcessor()
 {
     mFormatReader = nullptr;
+    transportSource.releaseResources();
     mSampler.clearSounds();
     mSampler.clearVoices();
 }
@@ -100,8 +106,9 @@ void SimpleSamperAudioProcessor::changeProgramName (int index, const juce::Strin
 void SimpleSamperAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     mSampler.setCurrentPlaybackSampleRate(sampleRate);
+    mSpectrumAnalyzer.prepareToPlay(sampleRate, samplesPerBlock);
     SampleRate = sampleRate;
-    samplesPerBlock = samplesPerBlock;
+    mSamplesPerBlock = samplesPerBlock;
     updateADSR();
     auto numVoice = mSampler.getNumVoices();
     for (int i = 0; i < numVoice; ++i)
@@ -110,6 +117,7 @@ void SimpleSamperAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
             voice->prepareToPlay(SampleRate, samplesPerBlock, getTotalNumOutputChannels());
         }
     }
+    transportSource.prepareToPlay(samplesPerBlock, sampleRate);
 }
 
 void SimpleSamperAudioProcessor::releaseResources()
@@ -146,6 +154,19 @@ bool SimpleSamperAudioProcessor::isBusesLayoutSupported (const BusesLayout& layo
 
 void SimpleSamperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    if (isPlayng) {
+        AudioSourceChannelInfo bufferToFill(buffer);
+        if (readerSource.get() == nullptr)
+        {
+            bufferToFill.clearActiveBufferRegion();
+            return;
+        }
+
+        transportSource.getNextAudioBlock(bufferToFill);
+        isPlayng = transportSource.isPlaying();
+        return;
+    }
+
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -223,18 +244,37 @@ void SimpleSamperAudioProcessor::loadFile(const String& path)
     
     mFormatReader = mFormatManager.createReaderFor(file);
 
-    auto sampleLength = static_cast<int>(mFormatReader->lengthInSamples);
+    if (mFormatReader != nullptr) {
+        auto sampleLength = static_cast<int>(mFormatReader->lengthInSamples);
 
-    mWaveForm.setSize(1, sampleLength);
-    mFormatReader->read(&mWaveForm, 0, sampleLength, 0, true, false);
+        if (sampleLength > (mFormatReader->sampleRate * 20)) {
+            NativeMessageBox::showMessageBox(
+                AlertWindow::AlertIconType::WarningIcon,
+                "Warning", 
+                "Audio file longer than 20 seconds.");
+            return;
 
-    BigInteger range;
-    range.setRange(0, 128, true);
+        }
 
-    //mSampler.addSound(new MySamplerSound("Sample", *mFormatReader, range, 60, 0.1, 0.1, 10.0));
-    mSampler.addSound(new SynthSound(44100, range, 5000, getTotalNumOutputChannels(), 60, 0.1, 0.1));
+        mWaveForm.clear();
+        mSpectrumAnalyzer.Clear();
 
-    FileLoaded.sendActionMessage("");
+        mWaveForm.setSize(1, sampleLength);
+        mFormatReader->read(&mWaveForm, 0, sampleLength, 0, true, false);
+
+        std::unique_ptr<juce::AudioFormatReaderSource> newSource(new juce::AudioFormatReaderSource(mFormatReader, true));
+        transportSource.setSource(newSource.get(), 0, nullptr, mFormatReader->sampleRate);
+        readerSource.reset(newSource.release());
+
+        FileLoaded.sendActionMessage("");
+        //StartCalculation();
+    }
+    else {
+        NativeMessageBox::showMessageBox(
+            AlertWindow::AlertIconType::WarningIcon,
+            "Warning",
+            "Can't read audio file.");
+    }
 }
 
 void SimpleSamperAudioProcessor::updateADSR() 
@@ -253,6 +293,46 @@ void SimpleSamperAudioProcessor::updateADSR()
         }
     }
     mShouldUpdate = false;
+}
+
+void SimpleSamperAudioProcessor::StartCalculation()
+{
+    mSampler.clearSounds();
+
+    mSpectrumAnalyzer.SetSample(mWaveForm);
+    BigInteger range;
+    range.setRange(0, 128, true);
+    spectre = mSpectrumAnalyzer.GetFFT_Tree();
+
+    StartCalculationLoaded.sendActionMessage("");
+
+    auto sound = new SynthSound(
+        getSampleRate(), 
+        spectre, 
+        range, 
+        mSamplesPerBlock, 
+        getTotalNumOutputChannels(), 
+        60, 
+        0.1,
+        0.1
+    );
+
+    sound->setEnvelopeParameters(mADSRparameters);
+
+    mSampler.addSound(sound);
+
+}
+
+void SimpleSamperAudioProcessor::PlaySample()
+{
+    if (transportSource.isPlaying()) {
+        transportSource.stop();
+    }
+    else {
+        transportSource.setPosition(0.0);
+        transportSource.start();
+        isPlayng = true;
+    }
 }
 
 AudioProcessorValueTreeState::ParameterLayout SimpleSamperAudioProcessor::createParameters() 

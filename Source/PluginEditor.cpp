@@ -16,27 +16,45 @@ SimpleSamperAudioProcessorEditor::SimpleSamperAudioProcessorEditor (SimpleSamper
     mWaveThumbnail(p), 
     mADSRComponent(p), 
     mFileLoaderListener(nullptr),
-    mSAComponent()
+    mStartCalculationListener(nullptr)
+    //mSAComponent()
     //mDragAndDropComponent(p)
 {
+    //init buttons actions
+    mLoadButton.onClick = [&]() {audioProcessor.loadFileFromOpenFileDialog(); };
+    mStartCalculationButton.onClick = [&]() {audioProcessor.StartCalculation(); };
+    mPlaySampleButton.onClick = [&]() {audioProcessor.PlaySample(); };
+
+    mStartCalculationButton.setEnabled(false);
+    mPlaySampleButton.setEnabled(false);
+
+
+    addAndMakeVisible(mLoadButton);
+    addAndMakeVisible(mStartCalculationButton);
+    addAndMakeVisible(mPlaySampleButton);
+
     addAndMakeVisible(mWaveThumbnail);
-    addAndMakeVisible(mADSRComponent);
-    addAndMakeVisible(mSAComponent);
+    //addAndMakeVisible(mADSRComponent);
+    addAndMakeVisible(mSpectrogramCWT);
+    //addAndMakeVisible(mSAComponent);
 
     //mDragAndDropComponent.setVisible(false);
     //addAndMakeVisible(mDragAndDropComponent);
 
     mFileLoaderListener.setFunction(std::bind(&SimpleSamperAudioProcessorEditor::FileLoaded, this));
+    mStartCalculationListener.setFunction(std::bind(&SimpleSamperAudioProcessorEditor::StartCalculation, this));
     audioProcessor.getBroadcasterFileLoaded().addActionListener(&mFileLoaderListener);
+    audioProcessor.getBroadcasterStartCalculationLoaded().addActionListener(&mStartCalculationListener);
 
     //audioProcessor.loadFile("C:\\ProgramData\\Ableton\\Live 10 Suite\\Resources\\Core Library\\Samples\\Grand Piano\\GrandPiano-A#-1-p.aif");
     //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\A440.wav");
-    audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\2kWave.wav");
+    //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\2kWave.wav");
     //audioProcessor.loadFile("D:\\YandexDisk\\5kWave.wav");
     //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\Chords.wav");
+    //audioProcessor.loadFile("D:\\YandexDisk\\Ableton Projects\\saw.wav");
     startTimerHz(30);
 
-    setSize (700, 600);
+    setSize (1500, 1000);
 }
 
 SimpleSamperAudioProcessorEditor::~SimpleSamperAudioProcessorEditor()
@@ -54,16 +72,28 @@ void SimpleSamperAudioProcessorEditor::paint (juce::Graphics& g)
 
 void SimpleSamperAudioProcessorEditor::resized()
 {
-    //mDragAndDropComponent.setBounds(0.0f, 0.0f, getWidth(), getHeight());
-    mWaveThumbnail.setBoundsRelative(0, 0, 1, 0.5f);
-    mADSRComponent.setBoundsRelative(0.6f, 0.3f, 0.4f, 0.4f);
-    mSAComponent.setBoundsRelative(0, 0.5f, 1, 0.5f);
+    mLoadButton.setBoundsRelative(0, 0, 0.33f, 0.05f);
+    mPlaySampleButton.setBoundsRelative(0.335f, 0, 0.33f, 0.05f);
+    mStartCalculationButton.setBoundsRelative(0.665f, 0, 0.33f, 0.05f);
+
+    mWaveThumbnail.setBoundsRelative(0, 0.05f, 1, 0.25f);
+    mSpectrogramCWT.setBoundsRelative(0, 0.3f, 1, 0.7f);
+    //mADSRComponent.setBoundsRelative(0.6f, 0.3f, 0.4f, 0.4f);
+    //mSAComponent.setBoundsRelative(0, 0.5f, 1, 0.5f);
 }
 
 
 void SimpleSamperAudioProcessorEditor::FileLoaded() {
+    mSpectrogramCWT.Clear();
     mWaveThumbnail.setShouldBePainting(true);
-    mSAComponent.SetSample(audioProcessor.getWaveForm());
+    mStartCalculationButton.setEnabled(true);
+    mPlaySampleButton.setEnabled(true);
+    repaint();
+}
+
+void SimpleSamperAudioProcessorEditor::StartCalculation() {
+    mSpectrogramCWT.SetSpectre(&audioProcessor.GetSpectre());
+
     repaint();
 }
 

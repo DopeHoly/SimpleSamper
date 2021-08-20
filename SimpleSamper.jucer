@@ -53,6 +53,10 @@
             file="Source/SmartWaveGenerator.h"/>
       <FILE id="GJekNM" name="SynthVoice.cpp" compile="1" resource="0" file="Source/SynthVoice.cpp"/>
       <FILE id="vMIlUc" name="SynthVoice.h" compile="0" resource="0" file="Source/SynthVoice.h"/>
+      <FILE id="W1MRns" name="SpectrogramCWT.cpp" compile="1" resource="0"
+            file="Source/SpectrogramCWT.cpp"/>
+      <FILE id="FDnR5B" name="SpectrogramCWT.h" compile="0" resource="0"
+            file="Source/SpectrogramCWT.h"/>
       <FILE id="paz9g9" name="OSC_Setting.cpp" compile="1" resource="0" file="Source/OSC_Setting.cpp"/>
       <FILE id="AbeQiy" name="OSC_Setting.h" compile="0" resource="0" file="Source/OSC_Setting.h"/>
       <FILE id="WVLkw1" name="ValuesFunc.cpp" compile="1" resource="0" file="Source/ValuesFunc.cpp"/>

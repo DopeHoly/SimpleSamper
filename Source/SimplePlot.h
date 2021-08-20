@@ -35,8 +35,8 @@ private:
 
     Image mBufferImage;
 
-    Colour backgroundColor{ Colours::aliceblue.darker() };
-    Colour lineColor{ Colours::white };
+    Colour backgroundColour{ Colours::aliceblue.darker() };
+    Colour lineColour{ Colours::white };
 
     void DrawOnImage(Image& image);
 

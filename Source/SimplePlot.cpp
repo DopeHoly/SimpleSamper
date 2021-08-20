@@ -30,7 +30,7 @@ void SimplePlot::resized()
 {
     mBufferImage = Image(Image::PixelFormat::RGB, getWidth(), getHeight(), true);
     Graphics g(mBufferImage);
-    g.fillAll(backgroundColor);
+    g.fillAll(backgroundColour);
     DrawOnImage(mBufferImage);
 }
 
@@ -52,7 +52,7 @@ void SimplePlot::SetSample(std::vector<OSC_Setting>* points)
 void SimplePlot::DrawOnImage(Image& image)
 {
     Graphics g(image);
-    g.fillAll(backgroundColor);
+    g.fillAll(backgroundColour);
     Path curve;
     //const auto [min, max] = std::minmax_element(begin(mPoints), end(mPoints));
     auto max = 100;

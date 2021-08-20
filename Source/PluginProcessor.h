@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "SpectrumAnalyzer.h"
 #include "MySamplerVoice.h"
 
 //==============================================================================
@@ -67,13 +68,24 @@ public:
     ADSR::Parameters& getADSRParams() { return mADSRparameters; }
     AudioProcessorValueTreeState& getAPVTS() { return mAPVTS; }
     ActionBroadcaster& getBroadcasterFileLoaded() { return FileLoaded; }
+    ActionBroadcaster& getBroadcasterStartCalculationLoaded() { return StartCalculationLoaded; }
     Synthesiser& getSampler() { return mSampler; }
+    SpectrumAnalyzer& getSpectrumAnalyzer() {return mSpectrumAnalyzer ;}
+
+    void StartCalculation();
+
+    FFT_Tree_Spectre& GetSpectre() { return *spectre; }
+
+    void PlaySample();
 
 private:
     ActionBroadcaster FileLoaded;
+    ActionBroadcaster StartCalculationLoaded;
     Synthesiser mSampler;
     //ADSR mADSR;
     const int mNumVoices{ 3 };
+
+    SpectrumAnalyzer mSpectrumAnalyzer;
 
     AudioBuffer<float> mWaveForm;
 
@@ -82,15 +94,21 @@ private:
     AudioFormatManager mFormatManager;
     AudioFormatReader* mFormatReader{ nullptr };
 
+    std::unique_ptr<AudioFormatReaderSource> readerSource;
+    AudioTransportSource transportSource;
+    bool isPlayng{ false };
+
+    FFT_Tree_Spectre* spectre{ nullptr };
+
     AudioProcessorValueTreeState mAPVTS;
     AudioProcessorValueTreeState::ParameterLayout createParameters();
     void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
 
     std::atomic<bool> mShouldUpdate{ true };
     double SampleRate;
-    int samplesPerBlock;
+    int mSamplesPerBlock{ 0 };
 
-    void recreateSamplerVoices(int numVoices = 0);
+    void recreateSamplerVoices(int numVoices = 3);
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleSamperAudioProcessor)
 };

@@ -10,6 +10,7 @@
 
 #pragma once
 #include <JuceHeader.h>
+#include <map>
 #include "OSC_Setting.h"
 #include "MyOscillator.h"
 
@@ -33,10 +34,14 @@ public:
 class SimpleWaveGenerator
 {
 public:
+    SimpleWaveGenerator();
     SimpleWaveGenerator(double sampleRate, int samplesPerBlock, int outputChanels);
     ~SimpleWaveGenerator();
 
+    void prepareToPlay(double sampleRate, int samplesPerBlock, int outputChanels);
+
     float* renderWave(int numSamples);
+    double* renderWaveDouble(int numSamples);
 
     void SetFrequency(float freq, int id = 0);
     void SetGain(float gain, int id = 0);
@@ -55,3 +60,4 @@ private:
     dsp::Gain<float> _gain;
     float gainValue{ 1 };
 };
+
